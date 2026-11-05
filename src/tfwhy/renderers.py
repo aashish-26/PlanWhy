@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from .analyzer import PlanSummary
+from .analyzer import PlanSummary, action_label, resource_type_label
 from .ai import AIExplanation, AIFindingPayload
 from .fixes import FixProposal, VerificationResult
 from .history import HistoryError
@@ -40,7 +40,10 @@ def render_markdown(summary: PlanSummary) -> str:
     if not summary.resources:
         lines.append("No resource changes.")
     for resource in summary.resources:
-        lines.append(f"- `{resource.address}` (`{resource.resource_type}`): **{resource.category}**")
+        lines.append(f"- **{resource_type_label(resource.resource_type)}** — `{resource.resource_name}`: **{action_label(resource.category)}**")
+        lines.append(f"  - Address: `{resource.address}`")
+        if resource.changed_paths:
+            lines.append(f"  - Changed attributes (values redacted): {', '.join(f'`{path}`' for path in resource.changed_paths)}")
         if resource.replacement_paths:
             lines.append(f"  - Replacement paths: {', '.join(f'`{path}`' for path in resource.replacement_paths)}")
         if resource.action_reason:
@@ -68,7 +71,10 @@ def render_terminal(summary: PlanSummary) -> str:
     else:
         lines.append("Resources:")
         for resource in summary.resources:
-            lines.append(f"- {resource.address} ({resource.resource_type}): {resource.category}")
+            lines.append(f"- {resource_type_label(resource.resource_type)} - {resource.resource_name} - {action_label(resource.category)}")
+            lines.append(f"  address: {resource.address}")
+            if resource.changed_paths:
+                lines.append(f"  changed attributes (values redacted): {', '.join(resource.changed_paths)}")
             if resource.replacement_paths:
                 lines.append(f"  replacement paths: {', '.join(resource.replacement_paths)}")
             if resource.action_reason:

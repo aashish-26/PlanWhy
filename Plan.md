@@ -7,7 +7,7 @@ Type	Local-first Terraform engineering assistant
 Current interface	Python CLI
 Primary users	Platform engineers, DevOps engineers, SREs, Terraform consultants, infrastructure teams
 Active phase	No active phase — Phase 12 is complete
-Latest reported core validation	Phase 12 complete; 71 Python unit tests passed on 2026-11-05; local Ollama `llama3.2` replacement, standards, and drift smoke tests passed
+Latest reported core validation	Phase 12 complete; 72 Python unit tests passed on 2026-11-05; local Ollama `llama3.2` replacement, standards, and drift smoke tests passed; MIT license and release checklist added
 Core constraints	No terraform apply, no terraform destroy, no telemetry by default, no raw-plan persistence, no cloud access required for static analysis
 
 
@@ -93,12 +93,13 @@ Phase 8 — Install once, run from any project	Complete for local repository ins
 Phase 9 — Configuration understanding	Complete	43 tests reported at phase close
 Phase 10 — Import and permission assistance	Complete	52 tests reported at phase close
 Phase 11 — Drift and upgrade assistance	Complete	58 tests reported; drift CLI terminal/Markdown/JSON smoke tests and git diff --check passed; AWS fixture validation unavailable because provider was not installed
-Phase 12 — Optional local AI explanations	Complete	71 tests passed; explicit local-only Ollama adapter, conservative replacement-cause safeguards, allowlisted prompts, mocked CLI/output/failure coverage, and real `llama3.2` replacement/standards/drift smoke tests
+Phase 12 — Optional local AI explanations	Complete	72 tests passed; explicit local-only Ollama adapter, conservative replacement-cause safeguards, allowlisted prompts, mocked CLI/output/failure coverage, and real `llama3.2` replacement/standards/drift smoke tests
 
 
 Known scope boundaries
 - TFWhy is a Python CLI, not yet a conversational application or editor extension.
-- PyPI publication and installation remain unverified unless the repository's actual release state changes.
+- PyPI publication and installation remain unverified until a package is actually published.
+- The repository is licensed under MIT; the project remains pre-1.0 and requires release review before publication.
 - Terraform validate can require provider plugins; report provider-unavailable limitations accurately.
 - Drift analysis does not perform cloud/state refresh and cannot reliably establish who caused a remote change.
 - Current import generation and provider migration checks are bounded to implemented/tested cases.
@@ -159,7 +160,7 @@ Exit criteria
 - Privacy/security regression tests, full test suite, compile checks, relevant CLI smoke tests, and diff checks pass.
 - README and this plan accurately describe actual behavior and limitations.
 - Any manual Ollama test is reported honestly; if Ollama cannot be tested, that limitation is recorded.
-Reported exit evidence: The 2026-10-19 baseline passed 58 tests and the latest suite passed 71. `python3 -m compileall -q src tests` passed previously. Mocked CLI tests exercised terminal, Markdown, and JSON model renderers; real `llama3.2` smoke tests passed for replacement/terminal, standards/Markdown, and drift/JSON explanations. Missing-model guidance and likely replacement-cause overstatement safeguards were fixed with regression coverage. No cloud call, Terraform apply/destroy, telemetry, or infrastructure operation was performed; the explicitly selected local model was downloaded by the user workflow.
+Reported exit evidence: The 2026-10-19 baseline passed 58 tests and the latest suite passed 72. `python3 -m compileall -q src tests` passed previously. Mocked CLI tests exercised terminal, Markdown, and JSON model renderers; real `llama3.2` smoke tests passed for replacement/terminal, standards/Markdown, and drift/JSON explanations. Missing-model guidance, likely replacement-cause overstatement safeguards, and privacy-safe resource summaries were fixed with regression coverage. No cloud call, Terraform apply/destroy, telemetry, or infrastructure operation was performed; the explicitly selected local model was downloaded by the user workflow.
 Phase 13 — Public pilot and feedback FUTURE; AFTER PHASE 12
 Goal: Distribute a usable local CLI, learn from real users, and prioritize improvements from evidence rather than assumptions.
 - [ ] Prepare a release checklist and clear installation/troubleshooting instructions.

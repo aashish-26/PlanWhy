@@ -131,6 +131,26 @@ class PlanExplainerTests(unittest.TestCase):
         self.assertIn('"category": "replace"', output)
         self.assertNotIn('"change"', output)
 
+    def test_resource_summary_shows_safe_names_actions_and_changed_paths(self):
+        secret = "SYNTHETIC_SECRET_MARKER"
+        summary = load_plan(self.write_plan(plan([resource(
+            "aws_lambda_function.connect",
+            "aws_lambda_function",
+            ["update"],
+            before={"version": "3", "environment": {"secret": secret}},
+            after={"version": "4", "environment": {"secret": "changed"}},
+        )])))
+        resource_summary = summary.resources[0]
+        self.assertEqual(resource_summary.resource_name, "connect")
+        self.assertEqual(resource_summary.changed_paths, ("environment.secret", "version"))
+        terminal = render_terminal(summary)
+        markdown = render_markdown(summary)
+        self.assertIn("Lambda Function - connect - Updated", terminal)
+        self.assertIn("Changed attributes (values redacted)", markdown)
+        self.assertNotIn(secret, terminal)
+        self.assertNotIn("\"3\"", render_json(summary))
+        self.assertNotIn("\"4\"", render_json(summary))
+
     def test_empty_and_resource_less_plans(self):
         summary = load_plan(self.write_plan(plan()))
         self.assertEqual(sum(summary.counts().values()), 0)

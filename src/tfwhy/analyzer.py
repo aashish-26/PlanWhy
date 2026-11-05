@@ -22,6 +22,23 @@ SUPPORTED_ACTION_REASONS = frozenset(
     }
 )
 KNOWN_ACTIONS = frozenset({"create", "delete", "update", "read", "no-op"})
+RESOURCE_TYPE_LABELS = {
+    "aws_instance": "EC2 Instance",
+    "aws_s3_bucket": "S3 Bucket",
+    "aws_lambda_function": "Lambda Function",
+    "aws_dynamodb_table": "DynamoDB Table",
+    "aws_db_instance": "RDS Database",
+    "aws_security_group": "Security Group",
+    "aws_vpc": "VPC",
+}
+ACTION_LABELS = {
+    "create": "Created",
+    "delete": "Destroyed",
+    "replace": "Replaced",
+    "update": "Updated",
+    "read": "Read",
+    "no-op": "No-op",
+}
 
 
 class PlanError(ValueError):
@@ -37,6 +54,8 @@ class ResourceSummary:
     replacement_paths: tuple[str, ...] = ()
     action_reason: str | None = None
     previous_address: str | None = None
+    resource_name: str = ""
+    changed_paths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -191,6 +210,11 @@ def _parse_resource_change(change: Any, index: int, section: str) -> ResourceSum
         replacement_paths=tuple(_path_text(path) for path in replace_paths),
         action_reason=action_reason,
         previous_address=previous_address,
+        # The label comes from the Terraform address, never from evaluated
+        # resource values such as an S3 bucket name or Lambda function name.
+        resource_name=_resource_name(address),
+        # Compare values only in memory and retain structural paths, not values.
+        changed_paths=_changed_paths(change_data.get("before"), change_data.get("after")),
     )
 
 
@@ -256,6 +280,40 @@ def _path_text(path: list[str | int]) -> str:
     for part in path:
         result += f"[{part}]" if isinstance(part, int) else (f".{part}" if result else part)
     return result or "<root>"
+
+
+def _resource_name(address: str) -> str:
+    """Return only the Terraform local resource label, never a runtime value."""
+    final_segment = address.rsplit(".", 1)[-1]
+    return re.sub(r"\[[^]]+\]$", "", final_segment)
+
+
+def resource_type_label(resource_type: str) -> str:
+    return RESOURCE_TYPE_LABELS.get(resource_type, resource_type.replace("_", " ").title())
+
+
+def action_label(category: str) -> str:
+    return ACTION_LABELS.get(category, category.title())
+
+
+def _changed_paths(before: Any, after: Any) -> tuple[str, ...]:
+    """Compare plan values in memory and return structural paths, never values."""
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return ()
+    return tuple(_changed_paths_at(before, after, ""))
+
+
+def _changed_paths_at(before: dict[str, Any], after: dict[str, Any], prefix: str) -> list[str]:
+    paths: list[str] = []
+    for key in sorted(set(before) | set(after)):
+        path = f"{prefix}.{key}" if prefix else str(key)
+        if key not in before or key not in after:
+            paths.append(path)
+        elif isinstance(before[key], dict) and isinstance(after[key], dict):
+            paths.extend(_changed_paths_at(before[key], after[key], path))
+        elif before[key] != after[key]:
+            paths.append(path)
+    return paths
 
 
 def _category(actions: tuple[str, ...]) -> str:

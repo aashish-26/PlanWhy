@@ -55,7 +55,7 @@ source .venv/bin/activate
 python -m pip install -e .
 ```
 
-The package currently has no declared license. Treat it as unreleased project code until a license decision is made; no open-source license is implied.
+TFWhy is released under the [MIT License](LICENSE). It is still a pre-1.0 project, so behavior and compatibility boundaries may change.
 
 ## Quick start
 
@@ -67,6 +67,10 @@ tfwhy --help
 ```
 
 The console command works from outside the checkout after installation. The full test suite can be run with `python -m unittest discover -s tests -v`.
+
+## Release and Contribution Hygiene
+
+See [RELEASING.md](RELEASING.md) for the pre-release checklist. Do not commit Terraform plans, state, credentials, variable files, local history, or virtual environments. Run the full test suite and inspect `git diff --check` before opening a release pull request.
 
 ## Repository Layout
 
@@ -141,6 +145,17 @@ tfwhy history clear --confirm
 ```
 
 The current implementation supports Terraform plan JSON format versions with major version `1` and a numeric `MINOR` component, such as `1.0` and newer compatible `1.x` versions. It rejects malformed versions and unsupported major versions, such as `2.0`; accepting a newer minor version does not claim support for a different major version. It reports create, update, delete, replacement, read, and no-op resources, including addresses, types, replacement paths, and supported action reasons: `replace_because_cannot_update`, `replace_because_tainted`, `replace_by_request`, `delete_because_no_move`, `read_because_config_unknown`, `read_because_dependency_pending`, and `read_because_deferred`.
+
+### Resource summary output
+
+Plan reports include a concise resource summary in terminal, Markdown, and JSON output. Each resource shows:
+
+- A friendly kind such as `EC2 Instance`, `S3 Bucket`, or `Lambda Function`.
+- The Terraform local resource label and full address.
+- A clear action such as `Created`, `Updated`, `Destroyed`, `Replaced`, or `No-op`.
+- Changed attribute paths when Terraform provides comparable `before`/`after` objects.
+
+Attribute values are never rendered. For example, a Lambda version change is reported as `Changed attributes (values redacted): version`, not as `3 -> 4`. Runtime names such as an evaluated S3 bucket name are also not inferred from sensitive plan values; the report uses the safe Terraform resource label instead.
 
 | Compatibility surface | Exercised support | Boundary |
 | --- | --- | --- |
