@@ -35,6 +35,7 @@ env/
 # Local TFWhy data
 .tfwhy/
 tfwhy-history.json
+Plan.md
 
 # Terraform state, working directories, plans, and variable files
 .terraform/

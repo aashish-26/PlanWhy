@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from .analyzer import PlanSummary
+from .ai import AIExplanation, AIFindingPayload
 from .fixes import FixProposal, VerificationResult
 from .history import HistoryError
 from .imports import ImportProposal
@@ -132,6 +133,64 @@ def render_drift_terminal(summary: PlanSummary) -> str:
     else:
         _append_terminal_drift(lines, summary)
     return "\n".join(lines) + "\n"
+
+
+def render_ai_json(payload: AIFindingPayload, explanation: AIExplanation) -> str:
+    """Render only validated model interpretation, never a finding mutation."""
+    return json.dumps(
+        {
+            "notice": "Untrusted local-model interpretation. Deterministic TFWhy findings are unchanged.",
+            "deterministic_context": payload.as_dict(),
+            "explanation": explanation.as_dict(),
+        },
+        indent=2,
+        sort_keys=True,
+    ) + "\n"
+
+
+def render_ai_markdown(payload: AIFindingPayload, explanation: AIExplanation) -> str:
+    lines = [
+        "# TFWhy Local AI Explanation",
+        "",
+        "> **Untrusted local-model interpretation.** Deterministic TFWhy findings are unchanged.",
+        "",
+        f"- Finding: `{explanation.finding_id}`",
+        f"- Local model: `{explanation.model}`",
+        "",
+        "## Deterministic context sent to the local model",
+        "",
+    ]
+    lines.extend(f"- {fact}" for fact in payload.deterministic_facts)
+    _append_ai_sections(lines, explanation, markdown=True)
+    return "\n".join(lines) + "\n"
+
+
+def render_ai_terminal(payload: AIFindingPayload, explanation: AIExplanation) -> str:
+    lines = [
+        "TFWhy local AI explanation (untrusted model interpretation)",
+        "Deterministic TFWhy findings are unchanged.",
+        f"Finding: {explanation.finding_id}",
+        f"Local model: {explanation.model}",
+        "Deterministic context sent to the local model:",
+    ]
+    lines.extend(f"- {fact}" for fact in payload.deterministic_facts)
+    _append_ai_sections(lines, explanation, markdown=False)
+    return "\n".join(lines) + "\n"
+
+
+def _append_ai_sections(lines: list[str], explanation: AIExplanation, markdown: bool) -> None:
+    sections = (
+        ("Deterministic facts", explanation.facts),
+        ("Cautious interpretation", explanation.interpretation),
+        ("What remains unknown", explanation.uncertainty),
+        ("Conservative next steps", explanation.next_steps),
+    )
+    for title, items in sections:
+        if markdown:
+            lines.extend(["", f"## {title}", ""])
+        else:
+            lines.append(f"{title}:")
+        lines.extend(f"- {item}" for item in items)
 
 
 def render_review_json(report: StandardsReport) -> str:

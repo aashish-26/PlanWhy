@@ -2,6 +2,25 @@
 
 `tfwhy` is a local-first, deterministic Terraform plan explainer. Phase 1 reads Terraform plan JSON and reports resource actions without sending data over the network or requiring AI credentials.
 
+> 🧭 **Current status:** deterministic CLI complete, local Ollama explanations available by explicit opt-in, and no cloud credentials required for static analysis.
+
+| Capability | Command | Safety boundary |
+| --- | --- | --- |
+| 📋 Explain a plan | `tfwhy explain PLAN.json` | Reads user-supplied JSON; never applies infrastructure |
+| 🔍 Review standards | `tfwhy review` | Uses local configuration and optional Terraform checks |
+| 🌊 Inspect drift | `tfwhy drift PLAN.json` | Reads explicit `resource_drift`; never refreshes state |
+| 🧠 Explain one finding locally | `tfwhy ai-explain ...` | Sends only an allowlisted payload to local Ollama |
+| 🛠️ Propose a fix | `tfwhy fix ... --dry-run` | Preview-first; writes require explicit approval |
+| 🧾 Keep history | `tfwhy explain ... --save-history` | Opt-in sanitized metadata only |
+
+## Why TFWhy
+
+- 🧪 **Evidence first:** deterministic findings remain authoritative.
+- 🔒 **Privacy first:** raw plans, state, values, secrets, and credentials stay out of reports and history.
+- 🧱 **Safe by default:** no `terraform apply`, `terraform destroy`, telemetry, or cloud access.
+- 🧭 **Honest uncertainty:** ambiguous causes remain `Unknown` or `Inconclusive`.
+- 🆓 **Free core:** AI is optional, local, and never required for the CLI.
+
 ## Installation
 
 Requires Python 3.11 or newer. From a checkout:
@@ -108,6 +127,7 @@ tfwhy explain plan.json --format json
 tfwhy explain plan.json --dir ./infra
 tfwhy drift plan.json
 tfwhy drift plan.json --format json
+tfwhy ai-explain --kind replacement --finding TFWHY-001 --plan plan.json --dir ./infra --model MODEL
 tfwhy review --dir ./infra
 tfwhy review --dir ./infra --required-tag Environment --skip-rule TFWHY-SEC-002
 tfwhy import --address aws_s3_bucket.logs --id example-logs --starter-config
@@ -138,6 +158,79 @@ Replacement paths are evidence supplied by Terraform; `tfwhy` does not infer a r
 Terraform can report a resource in both `resource_changes` and `resource_drift`. TFWhy reports that overlap and any structural `relevant_attributes` paths as correlation only: neither proves that drift caused a planned action, who changed a remote object, or that the plan was generated with `terraform plan -refresh-only`. Terraform's JSON plan format has no supported refresh-only-mode marker that TFWhy relies on. If `resource_drift` is absent, TFWhy reports no detected remote drift rather than guessing from normal actions. Raw before/after values are not retained or rendered.
 
 The supported drift path is a user-generated plan that Terraform has already produced, including refresh-only plans when their JSON contains `resource_drift`. OpenTofu behavior is not claimed or specially handled because this repository has no reproduced OpenTofu JSON compatibility case.
+
+## Optional local AI explanations
+
+AI explanations are strictly opt-in. Existing commands never contact Ollama, and TFWhy has no cloud-AI, telemetry, API-key, or model-download path. The dedicated command calls only Ollama's local loopback endpoint at `http://127.0.0.1:11434/api/generate` after it has first produced the selected deterministic finding.
+
+### First-time setup
+
+Install Ollama using its [official installation instructions](https://docs.ollama.com/quickstart). Then start the local service if your platform does not start it automatically, and pull a model yourself. TFWhy intentionally has no default model and never downloads one:
+
+```bash
+# Confirm Ollama is installed and the local service is reachable.
+ollama --version
+ollama list
+
+# Choose a model suitable for your own hardware.
+ollama pull llama3.2
+ollama list
+```
+
+Use the exact model name shown by `ollama list`; `MODEL` in examples is a placeholder, not a literal model name.
+
+### Explain a finding
+
+First run the deterministic command that creates the finding. Replacement and drift IDs are ordinal; standards findings use their rule ID:
+
+```bash
+# Replacement: the first replacement in the plan.
+tfwhy explain tests/fixtures/replacement_plan.json --dir tests/fixtures/replacement_config
+tfwhy ai-explain \
+  --kind replacement \
+  --finding TFWHY-001 \
+  --plan tests/fixtures/replacement_plan.json \
+  --dir tests/fixtures/replacement_config \
+  --model llama3.2
+
+# Standards: review must produce exactly one matching rule finding.
+tfwhy review --dir ./infra
+tfwhy ai-explain \
+  --kind standards \
+  --finding TFWHY-TF-002 \
+  --dir ./infra \
+  --model llama3.2 \
+  --format markdown
+
+# Drift: the plan must contain Terraform's resource_drift metadata.
+tfwhy drift plan.json
+tfwhy ai-explain \
+  --kind drift \
+  --finding TFWHY-DRIFT-001 \
+  --plan plan.json \
+  --model llama3.2 \
+  --format json
+```
+
+The AI command explains one existing deterministic finding; it does not discover arbitrary Terraform problems, change findings, or run fixes. Ollama output is labelled untrusted local-model interpretation.
+
+### Troubleshooting
+
+- `could not contact local Ollama`: start Ollama and confirm `http://127.0.0.1:11434` is reachable.
+- `could not find model 'name'`: run `ollama pull name`, then retry with the exact name from `ollama list`.
+- `--plan is required`: replacement and drift explanations need the same user-generated plan used by the deterministic command.
+- `finding ID does not identify a finding`: rerun `explain`, `drift`, or `review` and use an ID from that output.
+- Slow or failed responses: choose a model that fits available RAM/VRAM or pass `--timeout SECONDS` from 1 through 120.
+
+Replacement IDs are ordinal (`TFWHY-001` is the first replacement); drift IDs are also ordinal (`TFWHY-DRIFT-001` is the first drift finding). Standards explanations require exactly one finding with the selected stable rule ID. `--timeout` defaults to 30 seconds and accepts values from 1 through 120 seconds. A missing local service, model, malformed/empty reply, timeout, or oversized reply returns a non-zero error without changing the deterministic workflow.
+
+### Local data and privacy boundary
+
+TFWhy sends only a compact, versioned allowlist to the local model: the finding ID and kind; fixed deterministic facts; replacement confidence or drift status; standards severity; and safe replacement structural paths when they match a restrictive identifier grammar. For standards findings, TFWhy uses a built-in rule-context catalogue instead of sending finding text. It does **not** send resource addresses, filenames, locations, raw evidence text, explanations, raw plan JSON, Terraform state, HCL/configuration, before/after values, credentials, environment variables, import identifiers, or history. Prompts and responses are not persisted by TFWhy.
+
+The model must return a bounded JSON explanation with facts, cautious interpretation, uncertainty, and conservative next steps. TFWhy renders that content in a separately labelled **untrusted local-model interpretation** section together with the deterministic context it sent. Model text never changes TFWhy rule IDs, evidence, severity, confidence, drift status, or verification outcomes, and TFWhy never executes model-generated commands or code. Prompt-injection-like content is treated as data and excluded from the request where it does not meet the allowlist.
+
+Local model resource use depends on the model, context, and your hardware. Download and memory requirements can be significant; choose and pull a model only after reviewing its Ollama listing and your available disk/RAM/VRAM. See Ollama's [local API generate endpoint](https://docs.ollama.com/api/generate) for the local protocol TFWhy uses. TFWhy does not claim compatibility with every Ollama release or model. It does not provide open-ended troubleshooting, chat, arbitrary code review, automatic fixes, cloud inference, or model training.
 
 ## Security and limitations
 
@@ -247,7 +340,7 @@ python -m unittest discover -s tests -v
 ## MVP scope
 
 - Deterministic Terraform plan summaries in terminal, Markdown, and JSON.
-- Conservative replacement-cause evidence without AI or cloud access.
+- Conservative replacement-cause evidence without cloud access, plus explicitly invoked local Ollama explanations of selected deterministic findings.
 - Local standards and narrow AWS security checks.
 - Dry-run Terraform refactoring proposals with explicit approval for writes.
 - Opt-in, sanitized local plan history with recurrence observations.

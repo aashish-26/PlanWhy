@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
+from .ai import AIError, drift_payload, explain_with_ollama, replacement_payload, standard_payload
 from .analyzer import PlanError, load_plan
 from .fixes import FixError, apply_proposal, propose_fix, verify_plan
 from .history import HistoryError, clear_history, default_history_path, list_history, save_history, show_history
@@ -15,7 +17,7 @@ from .renderers import render_drift_json, render_drift_markdown, render_drift_te
 from .renderers import render_review_json, render_review_markdown, render_review_terminal
 from .renderers import render_fix_json, render_fix_markdown, render_fix_terminal, render_verification_json, render_verification_markdown, render_verification_terminal
 from .renderers import render_import_json, render_import_markdown, render_import_terminal
-from .renderers import render_history_json, render_history_markdown, render_history_terminal
+from .renderers import render_ai_json, render_ai_markdown, render_ai_terminal, render_history_json, render_history_markdown, render_history_terminal
 from .standards import review_configuration
 
 
@@ -31,6 +33,14 @@ def build_parser() -> argparse.ArgumentParser:
     drift = subparsers.add_parser("drift", help="report Terraform-detected remote drift from a plan JSON file")
     drift.add_argument("plan", type=Path, help="user-generated Terraform plan JSON")
     drift.add_argument("--format", choices=("terminal", "markdown", "json"), default="terminal")
+    ai = subparsers.add_parser("ai-explain", help="use local Ollama to explain one existing deterministic finding")
+    ai.add_argument("--kind", choices=("replacement", "standards", "drift"), required=True, help="deterministic finding type to explain")
+    ai.add_argument("--finding", required=True, help="replacement/drift ordinal or stable standards rule ID")
+    ai.add_argument("--plan", type=Path, help="plan JSON required for replacement or drift findings")
+    ai.add_argument("--dir", dest="config_dir", type=Path, default=Path.cwd(), help="configuration directory for standards/replacement analysis")
+    ai.add_argument("--model", required=True, help="already-installed local Ollama model; TFWhy never downloads it")
+    ai.add_argument("--timeout", type=float, default=30, help="local Ollama request timeout in seconds (1-120; default: 30)")
+    ai.add_argument("--format", choices=("terminal", "markdown", "json"), default="terminal")
     review = subparsers.add_parser("review", help="review Terraform configuration standards and security")
     review.add_argument("--dir", dest="config_dir", type=Path, default=Path.cwd(), help="Terraform directory to inspect (default: current directory)")
     review.add_argument("--format", choices=("terminal", "markdown", "json"), default="terminal")
@@ -96,6 +106,18 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         renderer = {"terminal": render_drift_terminal, "markdown": render_drift_markdown, "json": render_drift_json}[args.format]
         print(renderer(summary), end="")
+        return 0
+    if args.command == "ai-explain":
+        try:
+            payload = _ai_payload(args)
+            # This is the only code path that calls the local loopback model.
+            # All other CLI commands remain deterministic and model-free.
+            explanation = explain_with_ollama(payload, args.model, args.timeout)
+        except (AIError, PlanError) as exc:
+            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            return 2
+        renderer = {"terminal": render_ai_terminal, "markdown": render_ai_markdown, "json": render_ai_json}[args.format]
+        print(renderer(payload, explanation), end="")
         return 0
     if args.command == "review":
         try:
@@ -166,3 +188,36 @@ def main(argv: list[str] | None = None) -> int:
         print(renderer(document), end="")
         return 0
     return 2
+
+
+def _ai_payload(args: argparse.Namespace):
+    """Select one supported deterministic finding before constructing any prompt."""
+    if args.kind == "replacement":
+        if args.plan is None:
+            raise AIError("--plan is required for replacement AI explanations")
+        summary = analyze_replacements(load_plan(args.plan), args.config_dir)
+        finding = _ordinal_finding(summary.replacement_findings, args.finding, "TFWHY")
+        return replacement_payload(finding, args.finding)
+    if args.kind == "drift":
+        if args.plan is None:
+            raise AIError("--plan is required for drift AI explanations")
+        summary = load_plan(args.plan)
+        finding = _ordinal_finding(summary.drift_findings, args.finding, "TFWHY-DRIFT")
+        return drift_payload(finding, args.finding)
+    report = review_configuration(args.config_dir)
+    matches = tuple(finding for finding in report.findings if finding.rule_id == args.finding)
+    if not matches:
+        raise AIError("finding ID was not produced by this standards review")
+    if len(matches) != 1:
+        raise AIError("finding ID identifies multiple standards findings; this AI explanation is ambiguous")
+    return standard_payload(matches[0])
+
+
+def _ordinal_finding(findings: tuple[object, ...], finding_id: str, prefix: str):
+    match = re.fullmatch(rf"{re.escape(prefix)}-(\d+)", finding_id)
+    if match is None:
+        raise AIError(f"finding ID must have the form {prefix}-NNN")
+    index = int(match.group(1)) - 1
+    if index < 0 or index >= len(findings):
+        raise AIError("finding ID does not identify a finding in this report")
+    return findings[index]
