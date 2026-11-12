@@ -105,6 +105,8 @@ def apply_import_proposal(proposal: ImportProposal) -> Path:
     try:
         # Do not create parent directories: an explicit path must already point
         # to an existing project location, avoiding surprising filesystem work.
+        # Create only the approved new import-proposal file; never overwrite a file
+        # or contact a provider, cloud account, or Terraform state.
         proposal.output_path.write_text(proposal.content, encoding="utf-8")
     except OSError as exc:
         raise ImportError("could not write the approved import proposal") from exc

@@ -1,260 +1,259 @@
-TFWhy — Product Vision & Engineering Roadmap
-Single source of truth for product direction, architecture, engineering rules, phase status, and the active roadmap.
+# TFWhy — Product Plan and Engineering Roadmap
 
-Field	Current position
-Product	tfwhy
-Type	Local-first Terraform engineering assistant
-Current interface	Python CLI
-Primary users	Platform engineers, DevOps engineers, SREs, Terraform consultants, infrastructure teams
-Active phase	No active phase — Phase 12 is complete
-Latest reported core validation	Phase 12 complete; 72 Python unit tests passed on 2026-11-05; local Ollama `llama3.2` replacement, standards, and drift smoke tests passed; MIT license and release checklist added
-Core constraints	No terraform apply, no terraform destroy, no telemetry by default, no raw-plan persistence, no cloud access required for static analysis
+> **Purpose:** the source of truth for product direction, safety constraints, phase status, and implementation decisions. Attach this file to coding prompts. `README.md` is the public human-facing guide; its required contents are specified in [README.md specification](#9-readmemd-specification-for-future-agents).
 
+## 1. Product definition
 
-Working agreement: GitHub Copilot implements bounded tasks. ChatGPT supports architecture, Terraform semantics, test strategy, and review. Automated tests—not an AI assertion—establish expected behavior.
-How to use this document
-Attach Plan.md to implementation prompts. Before coding, inspect the current repository and identify the active phase. Work only on the active phase. Do not jump ahead. Fix reproducible bugs whenever found, add regression tests, run relevant tests and the full suite, and report actual results. Update this document when a phase status, roadmap, constraint, or meaningful architectural decision changes.
-1. Product vision
-TFWhy helps engineers understand Terraform's proposed changes, investigate resource replacements and drift, identify supported risks and standards violations, propose conservative corrections, and check whether a proposed fix achieves its intended result.
-Core promise
-Understand why Terraform is planning a change, determine what can and cannot be concluded safely, and verify whether a proposed fix achieves the intended result.
-Product principles
-1. Evidence before explanation. Findings must be grounded in plan metadata or inspected configuration. Distinguish confirmed facts, hypotheses, and unknown causes.
-2. Deterministic core. Parsing, rule evaluation, safety classification, and verification work without AI.
-3. Local-first by default. No telemetry or network transmission in core workflows by default.
-4. Safe by design. Never run terraform apply or terraform destroy; never silently mutate user configuration.
-5. Privacy by design. Treat plan JSON, state, configuration, logs, and history as potentially sensitive. Use explicit allowlists and never persist raw plans or secrets.
-6. Honest uncertainty. Missing or ambiguous evidence results in Unknown, Inconclusive, or equivalent—not fabricated certainty.
-7. Useful over clever. Prefer small, testable changes over agent frameworks, unnecessary dependencies, or broad refactors.
-8. Verify outcomes. Do not claim a fix is verified unless the defined checks actually ran and passed.
-9. Fix bugs whenever found. Reproducible correctness, security, privacy, or destructive-action bugs take priority over feature work.
-10. Follow the roadmap. Do not implement future features early, except for bug fixes and urgent security corrections.
-11. AI is an assistant, not an authority. AI can explain or help investigate; it cannot override deterministic findings, certify safety, or autonomously change infrastructure.
-Long-term product direction
-The long-term ambition is an interactive Terraform engineering assistant. An engineer may eventually describe a problem in ordinary language, and TFWhy will inspect permitted project evidence, run safe checks, ask targeted follow-up questions, explain multiple findings, and propose reviewable fixes. A conversational UI or editor integration may be considered only after the CLI is useful and validated with real users.
-This long-term vision is not the current scope. The current scope is a reliable CLI with optional local AI explanations of existing deterministic findings.
-2. Non-negotiable safety and privacy rules
-- Never execute terraform apply or terraform destroy.
-- Do not run commands that modify cloud infrastructure or require cloud credentials for static analysis.
-- Do not silently change, delete, or overwrite user configuration.
-- Show proposed fixes as diffs or separate files first. Any file write must be explicit, narrowly scoped, and approved.
-- Do not claim a fix is verified unless the defined checks actually ran and passed.
-- replace_paths identifies a replacement-triggering path; it does not necessarily prove the upstream root cause.
-- Do not treat count, for_each, timestamps, AMI lookups, data sources, or random resources alone as proof of root cause.
-- Never print or store raw plan JSON, Terraform state, raw resource attribute values, environment variables, credentials, or API keys in reports, logs, history, or AI payloads.
-- Use allowlisted metadata extraction. Do not pass full Terraform change objects into renderers, logs, history, or AI prompts.
-- Keep history opt-in and sanitized.
-- No telemetry by default.
-- Do not commit real plan files, state files, credentials, or private employer code.
-- Treat local model output as untrusted text. Never execute model-generated commands or code.
-- Prompt-injection-like text in Terraform comments, names, or user-provided descriptions is untrusted input, not instructions to the application.
-- When evidence is incomplete or ambiguous, say so clearly.
-3. Architecture direction
-Keep the architecture modular and small. Do not build one giant prompt that performs all analysis.
+| Item | Decision |
+| --- | --- |
+| Name | **TFWhy** — Terraform + “Why did this happen?” |
+| Product | Local-first Terraform engineering companion |
+| Interface | Python CLI |
+| Primary users | Platform/DevOps/SRE engineers, Terraform consultants, and infrastructure teams |
+| License and launch | Free, MIT-licensed, GitHub-first public pilot promoted through YouTube and developer feedback |
+| Current state | Phases 1–12 reported complete; Phase 13 (public pilot) is next |
+
+TFWhy helps an engineer understand Terraform changes, investigate supported replacement and drift evidence, review bounded risks and standards issues, and evaluate a proposed fix. It is **not** a replacement for Terraform, provider documentation, security scanners, or human review.
+
+### Product promise
+
+**Explain what the available Terraform evidence establishes, what it does not establish, and what a careful next step is.**
+
+### Non-goals for the current product
+
+- No `terraform apply` or `terraform destroy`.
+- No autonomous infrastructure changes, shell execution from model output, or silent edits to user files.
+- No hosted AI, remote backend, account system, telemetry by default, or cloud credentials required for static analysis.
+- No promise to diagnose or repair arbitrary Terraform errors, cover every provider, detect every secret, or eliminate all AI hallucinations.
+
+## 2. Principles and safety rules
+
+1. **Evidence before explanation.** A report labels confirmed facts, hypotheses, and unknowns separately.
+2. **Deterministic core.** Parsing, rules, confidence, safety classification, and verification work without AI.
+3. **AI is optional and non-authoritative.** It explains permitted deterministic findings only; it cannot alter a finding’s severity, confidence, evidence, status, or verification result.
+4. **Local-first and privacy-first.** No telemetry by default. Plans, state, configuration, logs, history, and model context are sensitive.
+5. **No destructive actions.** Never run `terraform apply` or `terraform destroy`; never silently overwrite or delete configuration.
+6. **Minimise data.** Use allowlisted metadata; do not print, persist, or send raw plan JSON, Terraform state, raw attributes, environment variables, credentials, API keys, or unrestricted HCL to the model.
+7. **Honest uncertainty.** Ambiguous evidence becomes `Unknown`/`Inconclusive`, never a fabricated cause.
+8. **Verification is literal.** A fix is “verified” only when the documented checks actually ran and passed.
+9. **Small, testable increments.** Avoid agent frameworks, broad refactors, and new dependencies unless a phase requires them.
+10. **Bugs outrank roadmap order.** Fix reproducible security, privacy, destructive-action, and correctness bugs with regression coverage.
+
+### Terraform semantics that must not be weakened
+
+- `replace_paths` identifies a path that triggered replacement; it does **not** prove the upstream business or configuration root cause.
+- `count`, `for_each`, timestamps, data sources, AMI lookups, and random resources are not root-cause proof by themselves.
+- TFWhy’s drift analysis is evidence-based and offline: it can interpret supplied configuration, state-derived material, or a user-generated plan. It does **not** connect to a provider, refresh remote state, independently discover live drift, or reliably determine who changed a remote resource.
+- A Terraform validation failure caused by an unavailable provider/plugin must be reported as that limitation, not as a configuration defect.
+
+## 3. Architecture boundary
+
+```text
 CLI
- |
- +--> Existing deterministic workflows
- |     plan loading / configuration inspection
- |     analyzers / rules / confidence / verification
- |     terminal / Markdown / JSON renderers
- |
- +--> Explicit optional AI explanation workflow
-       allowlisted finding/evidence builder
-       task-specific prompt template
-       local Ollama adapter
-       bounded response parser/validator
-       AI explanation renderer (separate from findings)
-Architecture rules
-- Keep parsing, analysis, verification, presentation, persistence, and model integration independently testable.
-- Keep raw Terraform values outside normalized findings and renderers.
-- Keep AI disabled unless explicitly invoked or enabled by a clearly documented user action; ordinary commands must not contact a model.
-- Phase 12 uses Ollama on the user's local machine only. Do not add cloud AI providers, hosted inference, telemetry, accounts, or a remote backend in this phase.
-- Use an explicit, small model adapter so the deterministic core is not coupled to Ollama-specific response details. Do not build a generic multi-provider framework yet.
-- Do not silently download models. Document how users install Ollama and pull a model themselves.
-- Do not assume one model is installed. Check local Ollama availability and selected model, and provide a useful error if unavailable.
-- Use a configurable model name with a documented default only after testing a candidate locally. Never claim a model is universally best.
-- Keep prompts versioned/testable and task-specific. Build them from a strict allowlist of sanitized finding metadata.
-- Do not pass raw plan JSON, state, full source trees, unrestricted HCL, or raw attribute values to the model as a convenience.
-- Keep model output separate from deterministic findings. It must not change severity, confidence, status, rule IDs, or verification results.
-- Bound request size, response size, and timeouts where the client/runtime supports them. Handle Ollama missing, unavailable, timeout, model-not-found, malformed-response, and empty-response cases gracefully.
-- No agent loop, tool calling, shell access, filesystem access by the model, or autonomous execution in Phase 12.
-- Future guided troubleshooting may add targeted project inspection and questioning, but only in a separately scoped phase with explicit user control and tests.
-4. Current repository status
-The following status reflects the latest user-reported progress. Re-run tests against the current local repository before relying on counts as current evidence.
-Milestone	Status	Latest reported evidence
-Phase 1 — Plan explainer	Complete	Plan actions and terminal/Markdown/JSON output
-Phase 2 — Replacement analysis	Complete	Conservative evidence and confidence states
-Phase 3 — Standards/security review	Complete	Configurable standards and selected security checks
-Phase 4 — Fix proposals/verification	Complete	Reviewable diffs and explicit approval/verification outcomes
-Phase 5 — Local history	Complete	Opt-in sanitized history, schema validation, corruption handling
-Phase 6 — Packaging/release readiness	Complete	Console script, docs, CI checks
-Phase 7 — Reliability hardening	Complete	Regression fixes and CLI smoke tests
-Phase 8 — Install once, run from any project	Complete for local repository install	pipx install . and outside-repository smoke tests; PyPI release not established
-Phase 9 — Configuration understanding	Complete	43 tests reported at phase close
-Phase 10 — Import and permission assistance	Complete	52 tests reported at phase close
-Phase 11 — Drift and upgrade assistance	Complete	58 tests reported; drift CLI terminal/Markdown/JSON smoke tests and git diff --check passed; AWS fixture validation unavailable because provider was not installed
-Phase 12 — Optional local AI explanations	Complete	72 tests passed; explicit local-only Ollama adapter, conservative replacement-cause safeguards, allowlisted prompts, mocked CLI/output/failure coverage, and real `llama3.2` replacement/standards/drift smoke tests
+├── Deterministic workflows
+│   ├── plan/configuration loading and inspection
+│   ├── analyzers, rules, confidence, and verification
+│   └── terminal / Markdown / JSON rendering
+└── Explicit optional AI explanation
+    ├── sanitized allowlisted finding/evidence builder
+    ├── versioned task-specific prompt
+    ├── local Ollama adapter
+    ├── bounded response parser/validator
+    └── separately labelled AI renderer
+```
 
+Architecture requirements:
 
-Known scope boundaries
-- TFWhy is a Python CLI, not yet a conversational application or editor extension.
-- PyPI publication and installation remain unverified until a package is actually published.
-- The repository is licensed under MIT; the project remains pre-1.0 and requires release review before publication.
-- Terraform validate can require provider plugins; report provider-unavailable limitations accurately.
-- Drift analysis does not perform cloud/state refresh and cannot reliably establish who caused a remote change.
-- Current import generation and provider migration checks are bounded to implemented/tested cases.
-- Do not market arbitrary Terraform diagnosis, automatic repair, perfect secret detection, or comprehensive provider coverage until demonstrated by tests.
-5. Roadmap and phase gates
-Only the active phase may introduce its planned feature set. Later phases can be refined after user feedback. Bug fixes and urgent security fixes are always allowed.
-Phase 7 — Reliability hardening COMPLETE
-Goal: Improve correctness of the existing MVP without expanding product scope.
-Reported exit evidence: Fixed a public-ingress variable-default false negative with regression coverage; full suite reported 35 tests at phase close; review output smoke-tested. Later test discovery fixes were also reported.
-Phase 8 — Install once, run from any Terraform project COMPLETE for local repository installation
-Goal: Make the CLI usable outside its source repository.
-Reported exit evidence: pipx install . from a local checkout and outside-repository CLI smoke tests passed. No PyPI package was available to test.
-Phase 9 — Improve Terraform configuration understanding COMPLETE
-Goal: Improve module-aware evidence linking and conservative tracing.
-Reported exit evidence: 43 tests passed; compile checks and explain output-format smoke tests passed. Terraform validation of a fixture was blocked by a locally unavailable provider.
-Phase 10 — Import and permission assistance COMPLETE
-Goal: Add bounded import assistance and conservative permission findings.
-Reported exit evidence: 52 tests passed; import/review CLI smoke tests and fixture formatting passed. AWS provider validation was unavailable locally.
-Phase 11 — Drift and upgrade assistance COMPLETE
-Goal: Explain supported drift and migration cases using user-generated plans/configuration.
-Reported exit evidence: 58 tests passed; drift terminal/Markdown/JSON, explain JSON and review JSON smoke tests passed; git diff --check passed. No terraform init, apply, destroy, cloud access, or credentials used. AWS fixture validation was not completed because the provider was unavailable.
-Phase 12 — Optional local AI explanations with Ollama COMPLETE
-Goal: Make existing deterministic TFWhy findings easier to understand using an optional local language model, without weakening reliability, privacy, or safety.
-Initial product scope: Explain findings already produced by TFWhy. Do not implement open-ended project diagnosis, guided cross-questioning, arbitrary code review, automatic fixes, cloud inference, or a chat UI in this phase.
-User experience target
-- Existing commands continue to work exactly as before without AI or Ollama.
-- A user explicitly invokes an AI explanation for supported existing findings, using a CLI option/subcommand chosen after inspecting the current CLI conventions.
-- TFWhy constructs the prompt; users do not need to write prompts themselves.
-- AI explanation appears as a distinct section, clearly labelled as model-generated interpretation.
-- Findings, severity, confidence, evidence, and verification results remain deterministic and unchanged.
-Implementation tasks
-- [x] Inspect the current code, CLI conventions, test suite, README, and Plan.md; rerun the 58-test baseline before coding.
-- [x] Add a dependency-free standard-library HTTP adapter for only Ollama's loopback `POST /api/generate` endpoint; no multi-provider framework was added.
-- [x] Add explicit `tfwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL` UX. `--model` is required, so TFWhy never selects or downloads a model silently.
-- [x] Keep the adapter separate from deterministic analyzers and report renderers; no ordinary command enters the model call path.
-- [x] Build strict, versioned allowlisted payloads. They omit raw values/plans/state/HCL, configuration files, credentials, environment variables, finding free text, addresses, filenames, and locations.
-- [x] Use fixed standards-rule context and restrictive safe structural-path handling so prompt-injection-like plan/configuration text is excluded.
-- [x] Require a task-specific JSON response that separates facts, interpretation, uncertainty, and conservative next steps; Unknown/Inconclusive findings prohibit certainty claims.
-- [x] Bound request/response size, response sections, and timeout; label rendered output as untrusted local-model interpretation and never mutate deterministic results.
-- [x] Handle absent Ollama, missing models, connection failure, timeout, empty/malformed/oversized replies, invalid model names, and ambiguous standards findings with safe errors.
-- [x] Add mocked privacy, allowlist, injection-like input, uncertainty, malformed-response, failure, ambiguity, terminal/Markdown/JSON rendering, and ordinary-command no-contact tests.
-- [x] Record that manual Ollama smoke testing was unavailable: `ollama` is not installed in this environment; no model was downloaded or tested.
-- [x] Update README with explicit opt-in usage, local data flow, manual model installation/pull, timeout, resource guidance, privacy boundaries, and limitations.
-- [x] Run full tests, compile checks, mocked CLI/output smoke tests, real unavailable-Ollama error smoke, and diff checks.
-Phase 12 exclusions
-- No cloud AI providers or hosted inference.
-- No automatic model download.
-- No telemetry, analytics, remote backend, user accounts, or central collection of prompts/responses.
-- No raw plan/state/configuration passed wholesale to the model.
-- No arbitrary tfwhy fix, open-ended diagnosis, cross-questioning, chat UI, IDE extension, model training/fine-tuning, or agent loop.
-- No Terraform apply/destroy, cloud operations, or autonomous file edits.
-Exit criteria
-- AI is explicitly opt-in and local to Ollama; ordinary CLI behavior is unchanged when AI is unused.
-- Only allowlisted sanitized finding metadata enters the model request.
-- Model explanations are separate from deterministic findings and cannot override them.
-- Uncertainty and unsupported evidence remain explicit.
-- Failure cases produce clear errors and do not break non-AI workflows.
-- Privacy/security regression tests, full test suite, compile checks, relevant CLI smoke tests, and diff checks pass.
-- README and this plan accurately describe actual behavior and limitations.
-- Any manual Ollama test is reported honestly; if Ollama cannot be tested, that limitation is recorded.
-Reported exit evidence: The 2026-10-19 baseline passed 58 tests and the latest suite passed 72. `python3 -m compileall -q src tests` passed previously. Mocked CLI tests exercised terminal, Markdown, and JSON model renderers; real `llama3.2` smoke tests passed for replacement/terminal, standards/Markdown, and drift/JSON explanations. Missing-model guidance, likely replacement-cause overstatement safeguards, and privacy-safe resource summaries were fixed with regression coverage. No cloud call, Terraform apply/destroy, telemetry, or infrastructure operation was performed; the explicitly selected local model was downloaded by the user workflow.
-Phase 13 — Public pilot and feedback FUTURE; AFTER PHASE 12
-Goal: Distribute a usable local CLI, learn from real users, and prioritize improvements from evidence rather than assumptions.
-- [ ] Prepare a release checklist and clear installation/troubleshooting instructions.
-- [ ] Test with a small group first, then broaden distribution when critical issues are resolved.
-- [ ] Invite voluntary, consent-based feedback. Do not add telemetry by default or upload users' Terraform code, plans, prompts, or secrets.
-- [ ] Track issues users choose to report: installation failures, false positives/negatives, explanation quality, latency, model compatibility, and confusing UX.
-- [ ] Establish a repeatable synthetic benchmark for deterministic findings and AI explanations.
-- [ ] Review feedback regularly and fix reproducible bugs with regression tests.
-- [ ] Use an initial two-to-three-month observation window as a planning target, not a deadline or proof of success.
-Exit criteria: Real engineers outside the creator's immediate circle can install and use TFWhy; feedback identifies concrete improvements; repeat usage and trust are assessed without overclaiming product-market fit.
-Phase 14 — Guided troubleshooting and fix assistance FUTURE; ONLY AFTER PILOT EVIDENCE
-Goal: Let users describe a Terraform problem in ordinary language while TFWhy gathers relevant evidence and asks useful follow-up questions.
-Potential CLI direction (illustrative; not implemented):
-tfwhy fix "Find mistakes in my Terraform code"
-- [ ] Define supported diagnostic intents and what evidence each needs.
-- [ ] Inspect only relevant project files under an explicit project directory; do not silently traverse arbitrary filesystem locations.
-- [ ] Run only documented safe checks; never run apply or destroy.
-- [ ] Determine which facts can be gathered from files/tools before asking the user.
-- [ ] Ask concise, targeted follow-up questions only when answers can materially change the diagnosis or proposed fix.
-- [ ] Keep answers scoped to the current investigation; do not persist sensitive dialogue by default.
-- [ ] Construct task-specific prompts from allowlisted evidence and user-provided answers.
-- [ ] Separate confirmed findings, hypotheses, unknowns, and next steps.
-- [ ] Generate reviewable diffs/proposals only for supported cases; require explicit approval for writes and never apply infrastructure changes.
-- [ ] Add scenario-based regression tests, including multi-issue projects, ambiguous errors, malicious comments, secret markers, and insufficient context.
-Exit criteria: Supported workflows are documented and tested; the tool asks questions only when useful, explains uncertainty, and never claims arbitrary Terraform can be safely repaired.
-Phase 15 — CI and pull-request workflows FUTURE
-Goal: Bring stable TFWhy findings into normal review workflows.
-- [ ] Define stable machine-readable output and exit-code policy.
-- [ ] Support CI usage without interactive prompts.
-- [ ] Define configurable severity thresholds and failure behavior.
-- [ ] Consider pull-request comments only after local output and finding IDs are stable.
-- [ ] Ensure logs and artifacts do not leak secrets or raw plans.
-- [ ] Test permissions, duplicate comments, provider failures, and noisy findings.
-Exit criteria: CI behavior is predictable, configurable, documented, and makes no infrastructure changes.
-Phase 16 — Business validation and future model strategy FUTURE; EVIDENCE-LED
-Goal: Determine whether a paid/team product or custom model is justified by real demand.
-- [ ] Interview target users and observe real workflows.
-- [ ] Measure repeat usage, false-positive tolerance, trust, time saved, and willingness to pay.
-- [ ] Identify a specific problem customers will pay to solve before building hosted infrastructure.
-- [ ] Evaluate potential team features such as policy packs, shared reports, collaboration, and administration only when validated.
-- [ ] Reassess data retention, access controls, tenant isolation, deletion, and security before any hosted offering.
-- [ ] Consider remote AI providers or hosted inference only as explicit, separately consented options with clear data disclosure and cost controls.
-- [ ] Consider fine-tuning or a custom model only if lawful, consented, high-quality training/evaluation data exists and measured results justify the compute and maintenance cost. Public use does not automatically grant permission to train on user code or sessions.
-Exit criteria: Repeat usage and demand for a specific paid capability are demonstrated. Downloads and social engagement alone are not product-market fit. Custom model development is a separate evidence-based decision, not an assumed milestone.
-6. Testing and release policy
-Every phase and bug fix must follow this policy.
-Required test layers
+- Parsing, analysis, verification, rendering, persistence, and model integration remain independently testable.
+- Raw Terraform values stay out of normalized findings and renderers.
+- Ordinary commands must not contact a model. AI requires an explicit command/option.
+- The Ollama adapter is small, local-only, loopback-only, and isolated from the deterministic core; do not add a generic multi-provider layer yet.
+- Never download a model automatically. A user selects and installs it themselves.
+- Prompts are versioned, bounded, task-specific, and built only from sanitized allowlisted metadata.
+- Treat comments, names, descriptions, and all model output as untrusted text. Do not let either supply instructions to the application.
+- Bound request/response size and timeout; handle unavailable Ollama, missing model, timeout, malformed/empty/oversized response, and invalid model input safely.
+
+## 4. Evidence status and repository audit note
+
+The following is **historical, user-reported project evidence** recovered from the prior plan. It is useful context, not a substitute for rerunning checks in the actual TFWhy checkout.
+
+| Phase | Status | Reported evidence |
+| --- | --- | --- |
+| 1 — Plan explainer | Complete | Plan actions with terminal, Markdown, and JSON output |
+| 2 — Replacement analysis | Complete | Conservative evidence and confidence states |
+| 3 — Standards/security review | Complete | Configurable standards and selected security checks |
+| 4 — Fix proposals/verification | Complete | Reviewable diffs and explicit approval/verification outcomes |
+| 5 — Local history | Complete | Opt-in sanitized history, schema validation, corruption handling |
+| 6 — Packaging/release readiness | Complete | Console script, documentation, CI checks |
+| 7 — Reliability hardening | Complete | Regression fixes and CLI smoke tests |
+| 8 — Install from any project | Complete for a local checkout | `pipx install .` and outside-repository smoke tests; PyPI not established |
+| 9 — Configuration understanding | Complete | 43 tests reported at phase close |
+| 10 — Import and permission assistance | Complete | 52 tests reported at phase close |
+| 11 — Drift and upgrade assistance | Complete | 58 tests reported; AWS fixture validation blocked by unavailable provider |
+| 12 — Optional local AI explanations | Complete | 72 tests reported passing; local `llama3.2` replacement, standards, and drift smoke tests reported passing |
+
+**Current repository audit (2026-11-12):** the actual checkout, package metadata, MIT license, release checklist, CI workflow, CLI help, source, and tests were inspected. The code matches the local-first, deterministic-core, explicit-Ollama, no-apply/no-destroy architecture in this plan. The full suite passed with 77 tests. A clean temporary-environment build produced and installed the `tfwhy 0.1.0` wheel, and the installed console script ran from outside the checkout. Safe deterministic CLI smoke checks passed for `explain`, `drift`, `review`, and import preview. Real local `llama3.2:latest` smoke tests passed for a replacement explanation and a repeated standards-rule explanation. A repeated-standards-finding AI-selection defect was fixed with an explicit one-based `--occurrence N` selector; its payload remains the same allowlisted rule context and never includes a location, address, or finding free text. Phase 13 readiness now also includes `tfwhy --version`, visible one-based occurrences in terminal/Markdown review output plus JSON `occurrence` fields, a public synthetic first-run example, and a versioned no-cloud benchmark that runs as part of the suite.
+
+Confirmed by the project owner after the earlier plan: local Ollama is now working. The prior plan further reports successful real local `llama3.2` smoke tests. This means “Ollama unavailable” is no longer the current product status; it remains a failure case that the program must handle.
+
+## 5. Completed Phase 12 contract — local Ollama explanations
+
+Phase 12 is complete only so long as these behaviours remain true:
+
+- The user explicitly invokes AI explanation for supported deterministic findings.
+- The current CLI contract is `tfwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL`; repeated standards rule IDs additionally require `--occurrence N` to select one finding without broadening model context.
+- `--model` is explicit; TFWhy must not silently choose or download a model.
+- The adapter calls only local Ollama and sends sanitized, allowlisted metadata—not raw plans, state, source trees, HCL, credentials, environment variables, addresses, filenames, locations, or raw finding text.
+- The response separates facts, interpretation, uncertainty, and conservative next steps, and is labelled as untrusted local-model interpretation.
+- Unknown or inconclusive findings cannot become certainty through model prose.
+- Model output never changes deterministic results or writes user files.
+
+Expected verification on the actual checkout before any related change:
+
+```bash
+python3 -m compileall -q src tests
+# Run the repository’s documented complete test command.
+tfwhy ai-explain --help
+```
+
+Then run the smallest relevant synthetic smoke test for each affected `replacement`, `standards`, or `drift` workflow. Never include a private plan, state file, or credentials in a test report.
+
+## 6. Roadmap and phase gates
+
+Only the active phase introduces planned features. Later phases may be refined from pilot evidence. Bug/security/privacy fixes are always allowed.
+
+### Phase 13 — Public pilot and feedback (ACTIVE)
+
+**Goal:** establish whether real engineers can install, understand, and trust TFWhy before expanding its scope.
+
+- [x] Inspect the actual repository and reconcile this plan, README, license, packaging metadata, CLI help, CI, and release checklist with reality.
+- [x] Run the full suite, relevant CLI smoke tests, and a clean-install package check; record actual outcomes and environment limitations.
+- [ ] Run every README command block against the release candidate where feasible, or label/remove any command that cannot be verified safely.
+- [ ] Publish a GitHub release only after the project owner reviews the release checklist and MIT licensing.
+- [ ] Publish GitHub-first installation and limitations guidance; promote it through YouTube and relevant developer communities.
+- [ ] Invite voluntary feedback through GitHub Issues/Discussions. Never collect or request private Terraform plans, state, credentials, source, prompts, or sessions.
+- [x] Use issue templates/categories for installation failures, false positives/negatives, confusing output, local model compatibility, latency, and documentation gaps.
+- [x] Build and maintain a versioned synthetic benchmark for deterministic findings and AI-prompt allowlisting; AI answer quality remains a human-reviewed pilot signal, not a benchmark score.
+- [x] Fix reproducible defects with regression tests; review findings regularly and decide the next small scope from evidence.
+- [x] Provide an installed-version command and explicit repeated-standards selectors so pilot feedback is reproducible.
+
+**Exit criteria:** engineers outside the creator’s immediate circle can install and use the tool; feedback identifies concrete, reproducible improvements; repeat usage and trust are assessed without calling downloads, views, or likes product-market fit.
+
+### Phase 14 — Guided troubleshooting and fix assistance (FUTURE; after pilot evidence)
+
+**Goal:** users can describe a supported Terraform problem, while TFWhy asks only decision-relevant questions and produces reviewable proposals.
+
+- Define supported intents and evidence requirements before implementation.
+- Inspect only an explicit project directory; do not silently traverse arbitrary paths.
+- Run documented safe checks only; never apply/destroy or use cloud operations.
+- Gather available facts before asking concise targeted questions.
+- Separate confirmed findings, hypotheses, unknowns, and next steps.
+- Generate diffs/proposals only for supported cases; require explicit approval for a narrow file write.
+- Test multi-issue projects, ambiguity, malicious comments, synthetic secret markers, and insufficient-context cases.
+
+**Not yet an implemented command:** do not document an illustrative `tfwhy fix "..."` command as available until the code and tests exist.
+
+### Phase 15 — CI and pull-request workflows (FUTURE)
+
+**Goal:** stable local findings become usable in ordinary review workflows.
+
+- Define machine-readable schema and exit-code policy.
+- Support non-interactive CI with configurable severity thresholds.
+- Consider PR comments only after finding IDs and output are stable.
+- Ensure logs and artifacts cannot leak raw plans or secrets; test permissions, duplicate output, provider failures, and noisy findings.
+
+### Phase 16 — Business validation and model strategy (FUTURE; evidence-led)
+
+**Goal:** decide whether a paid/team capability or any hosted/model investment is justified.
+
+- Interview target users; measure repeat use, false-positive tolerance, trust, time saved, and willingness to pay.
+- Identify one paid problem before building SaaS, accounts, or hosted infrastructure.
+- Consider policy packs, shared reports, collaboration, and administration only if the pilot validates them.
+- Reassess retention, access control, isolation, deletion, data disclosure, and cost before any hosted option.
+- Consider fine-tuning only with lawful, consented, high-quality data and a measured evaluation advantage. Public use never implies permission to train on user code or conversations.
+
+## 7. Test, release, and documentation policy
+
+Every change requires the smallest relevant subset plus the full repository suite when practical:
+
 1. Unit tests for parsers, analyzers, models, formatters, and helpers.
-2. Golden/fixture tests for known plans and configurations.
-3. Regression tests for every reproducible bug fixed where practical.
+2. Golden/fixture tests for known plans/configurations.
+3. Regression tests for reproducible bugs.
 4. Negative tests for malformed input, missing fields, unsupported versions, ambiguity, and failed external tools.
-5. Privacy tests using synthetic secret markers across reports, logs, history, diffs, and AI payloads.
-6. Integration tests with synthetic Terraform projects and Terraform-generated plans when available.
+5. Privacy tests with synthetic secret markers across reports, logs, history, diffs, and AI payloads.
+6. Integration tests with synthetic Terraform projects/plans when available.
 7. CLI smoke tests for affected commands, output formats, errors, and exit codes.
-8. Packaging tests when installation/distribution changes.
-9. Compatibility tests for declared platforms, Python versions, Terraform versions, and model/runtime combinations.
-Standard completion checklist
-- [ ] Inspect existing code and behavior before changing it.
-- [ ] Reproduce the bug or define measurable acceptance criteria.
-- [ ] Make the smallest effective change.
-- [ ] Add focused tests, including regression tests for bugs fixed.
-- [ ] Run relevant tests and the full suite.
-- [ ] Run relevant CLI smoke tests.
-- [ ] Review the diff for unrelated changes, secret leakage, unsafe file operations, and misleading claims.
-- [ ] Update docs only when behavior or limitations change.
-- [ ] Report actual commands and results; never claim tests ran if they did not.
-- [ ] Report remaining limitations and anything that could not be tested.
-If a test cannot run because Terraform, a provider plugin, or Ollama is unavailable, state that clearly. Mocked tests do not prove that the real executable works in that environment.
-Bug-fix policy
-Bugs are not restricted to the active roadmap phase. Reproduce and assess severity; fix critical security/privacy/destructive-action bugs immediately; fix reproducible correctness bugs with minimal patches and regression tests; run the relevant tests and full suite. If a safe fix is not possible, document impact, workaround, and reason for deferral. Do not leave a known serious bug merely because the roadmap points elsewhere.
-7. Working with Copilot and ChatGPT
-Use this instruction at the top of implementation prompts:
-Treat Plan.md as the source of truth. Inspect the current repository and identify the active phase before coding. Work only on the requested task within that phase. Do not jump to future phases or add unrelated features. Fix reproducible bugs discovered along the way, add regression tests, run relevant tests and the full suite, and report actual results. Never claim unsupported behavior or test results. If the request conflicts with this plan, explain the conflict before changing code. Update Plan.md only when phase status, roadmap, constraints, or an architectural decision genuinely changes.
+8. Packaging tests when distribution changes.
+9. Compatibility tests for declared platforms, Python/Terraform versions, and local model/runtime combinations.
 
-Copilot responsibilities
-- Inspect the current repository and relevant tests first.
-- Implement one bounded task at a time.
-- Include implementation, tests, full-suite validation, relevant smoke tests, docs, and phase-plan updates in the same prompt where practical.
-- Report files changed, bugs fixed, tests run/passed/failed, smoke-test results, and limitations.
-- Do not mark a phase complete based solely on generated code; use exit criteria.
-ChatGPT responsibilities
-- Help interpret behavior, Terraform semantics, architecture trade-offs, test strategy, and results.
-- Challenge unsupported root-cause claims and unsafe assumptions.
-- Prepare concise, implementation-ready prompts.
-- Respect the current phase and avoid unnecessary work.
-- Do not request real credentials, production state, sensitive plan JSON, or private employer code.
-User approval
-The user owns the final decision to accept changes, commit them, release the product, or enable any behavior that writes files or sends data externally.
-8. Early product validation measures
-These are proposed targets, not current achievements.
-- At least 10 people outside the creator's immediate circle try TFWhy.
-- At least 3 users return to use it without prompting.
-- Users can install and use it from their own Terraform project directory.
-- Record false positives, false negatives, unsupported cases, local model compatibility, and response quality using synthetic tests and voluntary reports.
-- Ask whether TFWhy changes a real decision, reduces investigation time, or improves user understanding.
-- Do not collect user code, plan files, prompts, or diagnostic sessions by default.
-- Use the results to choose the next improvement rather than assuming every planned feature should be built.
+Completion checklist:
+
+- [ ] Inspect the code and current behaviour first.
+- [ ] Define acceptance criteria or reproduce the bug.
+- [ ] Make the smallest effective change and focused test update.
+- [ ] Run relevant tests, full suite, CLI smoke tests, and docs-command checks.
+- [ ] Review diff for unrelated edits, secret leakage, unsafe writes, and misleading claims.
+- [ ] Update `Plan.md` and `README.md` only when their claims remain true.
+- [ ] Report exact commands/results and remaining limits. Never imply an unavailable provider, Terraform executable, or local model was tested.
+
+## 8. Instructions for coding agents
+
+Use this at the start of implementation prompts:
+
+> Treat `Plan.md` as the source of truth. Inspect the current repository, `git status`, CLI help, tests, and active phase before coding. Work only on the requested bounded task in that phase. Do not invent unsupported commands, flags, output formats, integrations, models, test results, or security claims. Fix reproducible bugs with regression coverage. Run and report actual relevant tests, the full suite where practical, CLI smoke tests, and documentation command checks. Keep raw Terraform values and secrets out of logs, fixtures, prompts, and reports. If the request conflicts with this plan, explain the conflict before changing code.
+
+Agent responsibilities:
+
+- Preserve verified facts; classify all other facts as implementation targets or unverified history.
+- Mark a phase complete only when its explicit exit criteria are evidenced.
+- Update this plan after a genuine status, constraint, architecture, or roadmap decision change.
+- Do not ask for production credentials, private state, real plans, or employer code. Use synthetic fixtures.
+- The project owner decides whether to accept, commit, publish, enable writes, or use an external service.
+
+## 9. README.md specification for future agents
+
+`README.md` is the public GitHub landing page. It must be maintained separately from this engineering plan and must describe only checked-in, test-supported behaviour.
+
+### Audience and tone
+
+- Write for an engineer arriving from GitHub, a YouTube link, search, or a shared issue—many will not know the project history.
+- Lead with the user problem and a plain-English explanation of TFWhy. Use clear, calm, technically precise language; be helpful rather than promotional.
+- Prefer “can analyse supplied evidence” to broad claims such as “understands everything” or “fixes Terraform.” Explain uncertainty without hiding it.
+- State that AI is optional local assistance, not a source of truth. Never promise “no hallucinations”; instead describe the deterministic/evidence boundary.
+
+### Required public structure
+
+1. **Title and one-sentence value proposition:** spell the name **TFWhy**, explain its Terraform + “Why” meaning, and say it is a local-first Python CLI.
+2. **What it helps with:** concise supported areas, qualified by the source-backed evidence available at release (plans, replacement analysis, standards/security checks, reviewable fix proposals/verification, bounded import/permission/drift/upgrade assistance, and optional local AI explanation).
+3. **What it does not do:** `terraform apply`/`destroy`, autonomous cloud operations, automatic file mutation, live cloud drift discovery, universal Terraform diagnosis, or perfect security/secret detection.
+4. **Trust, privacy, and drift semantics:** deterministic findings first; AI is opt-in/untrusted; no telemetry by default; sensitive artifact warning; no raw sensitive material in AI payloads; `replace_paths` and offline drift limitations.
+5. **Prerequisites and installation:** list only runtime/package-manager versions and commands confirmed in repository metadata or CI. Until PyPI publication is verified, document the reported local-checkout route `pipx install .` as a source install and do not present `pip install tfwhy` as available. State any platform support only if tested.
+6. **Quick start:** use only commands confirmed by the current `--help` output and tests. Pair each command with required input/artifact and expected output type. Never paste real plan/state/secrets.
+7. **Optional local Ollama:** make it a separate opt-in section. Link to the [official Ollama quickstart](https://docs.ollama.com/quickstart); explain that the user installs/runs Ollama and pulls a model themselves. Preserve the current explicit-model rule. After verification in the checkout, document the supported command, historically `tfwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL`, and an actual tested model (historically `llama3.2`). Explain local resource/latency variability and failure guidance. Never claim TFWhy installs models or uses cloud AI.
+8. **Examples and output:** use small synthetic, redacted examples. Label model-generated output separately from deterministic findings and show uncertainty where relevant.
+9. **Limitations:** provider plugins may be required for Terraform validation; PyPI status; supported/unsupported cases; no live cloud drift detection; AI output can be wrong and must be reviewed.
+10. **Feedback and contributing:** invite GitHub Issues/Discussions for reproducible bugs, false positives/negatives, install failures, model compatibility, and docs gaps. Ask contributors to use synthetic/redacted reproductions; never request credentials, state, raw plans, private source, or secrets. Include contribution/test commands only after verifying them in the repo.
+11. **License and project status:** state MIT only if an `LICENSE` file is present and is MIT; identify pre-1.0/pilot status if still accurate.
+
+### README claim and command rules
+
+- Treat `--help`, packaging metadata, tested examples, CI, and release artifacts as the authority. If they disagree with this plan, fix the implementation/docs discrepancy rather than guessing.
+- Do **not** invent subcommands, flags, config files, output formats, provider support, installation paths, package names, version support, benchmark scores, security guarantees, integrations, or roadmap features.
+- Do not describe illustrative future commands (`tfwhy fix`, chat, IDE, CI, hosted services) as present features.
+- Do not claim an AI explanation is deterministic, safe to apply, or capable of overriding evidence.
+- Use exact commands only after running them against the release candidate. Mark source-only/unverified commands clearly, or omit them.
+- Keep `Plan.md` implementation-specific; keep `README.md` shorter, outcome-focused, and free of internal phase mechanics.
+
+### README release gate
+
+Before publishing, run every code block that contains a command in a clean/synthetic environment where feasible. Confirm links, headings, license statement, installation route, CLI syntax, model guidance, privacy wording, and stated limitations. If this cannot be done, remove or label the unverified content; do not publish a confident guess.
+
+## 10. Pilot signals (not current achievements)
+
+- Ten people outside the creator’s immediate circle try TFWhy.
+- Three return without prompting.
+- Users can install it and use it from their own Terraform project directory.
+- Feedback records false positives/negatives, unsupported cases, local-model compatibility, response quality, and whether TFWhy changed a real decision or reduced investigation time.
+- No user code, plan, state, prompt, or diagnostic session is collected by default.
+
+These are learning signals, not revenue, traction, or product-market-fit claims.

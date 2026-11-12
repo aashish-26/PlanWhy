@@ -7,6 +7,7 @@ import re
 import sys
 from pathlib import Path
 
+from . import __version__
 from .ai import AIError, drift_payload, explain_with_ollama, replacement_payload, standard_payload
 from .analyzer import PlanError, load_plan
 from .fixes import FixError, apply_proposal, propose_fix, verify_plan
@@ -23,6 +24,7 @@ from .standards import review_configuration
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="tfwhy", description="Explain a Terraform plan without exposing values.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}", help="show the installed TFWhy version and exit")
     subparsers = parser.add_subparsers(dest="command", required=True)
     explain = subparsers.add_parser("explain", help="explain a Terraform plan JSON file")
     explain.add_argument("plan", type=Path)
@@ -35,7 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
     drift.add_argument("--format", choices=("terminal", "markdown", "json"), default="terminal")
     ai = subparsers.add_parser("ai-explain", help="use local Ollama to explain one existing deterministic finding")
     ai.add_argument("--kind", choices=("replacement", "standards", "drift"), required=True, help="deterministic finding type to explain")
-    ai.add_argument("--finding", required=True, help="replacement/drift ordinal or stable standards rule ID")
+    ai.add_argument("--finding", required=True, help="replacement/drift ordinal or standards rule ID")
+    ai.add_argument("--occurrence", type=int, help="1-based occurrence for a repeated standards rule ID")
     ai.add_argument("--plan", type=Path, help="plan JSON required for replacement or drift findings")
     ai.add_argument("--dir", dest="config_dir", type=Path, default=Path.cwd(), help="configuration directory for standards/replacement analysis")
     ai.add_argument("--model", required=True, help="already-installed local Ollama model; TFWhy never downloads it")
@@ -192,6 +195,8 @@ def main(argv: list[str] | None = None) -> int:
 
 def _ai_payload(args: argparse.Namespace):
     """Select one supported deterministic finding before constructing any prompt."""
+    if args.occurrence is not None and args.kind != "standards":
+        raise AIError("--occurrence is supported only for standards AI explanations")
     if args.kind == "replacement":
         if args.plan is None:
             raise AIError("--plan is required for replacement AI explanations")
@@ -208,9 +213,13 @@ def _ai_payload(args: argparse.Namespace):
     matches = tuple(finding for finding in report.findings if finding.rule_id == args.finding)
     if not matches:
         raise AIError("finding ID was not produced by this standards review")
-    if len(matches) != 1:
-        raise AIError("finding ID identifies multiple standards findings; this AI explanation is ambiguous")
-    return standard_payload(matches[0])
+    if args.occurrence is None:
+        if len(matches) != 1:
+            raise AIError("finding ID identifies multiple standards findings; rerun with --occurrence N from this review")
+        return standard_payload(matches[0])
+    if args.occurrence < 1 or args.occurrence > len(matches):
+        raise AIError("--occurrence does not identify a standards finding in this review")
+    return standard_payload(matches[args.occurrence - 1])
 
 
 def _ordinal_finding(findings: tuple[object, ...], finding_id: str, prefix: str):

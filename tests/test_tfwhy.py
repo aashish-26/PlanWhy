@@ -29,6 +29,18 @@ def resource(address, resource_type, actions, **change):
 
 
 class PlanExplainerTests(unittest.TestCase):
+    def test_version_flag_reports_the_packaged_version(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "tfwhy", "--version"],
+            cwd=ROOT,
+            env={"PYTHONPATH": str(ROOT / "src")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "tfwhy 0.1.0\n")
+
     def write_plan(self, content):
         handle = tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False)
         with handle:

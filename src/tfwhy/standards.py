@@ -29,7 +29,25 @@ class StandardsReport:
     findings: tuple[StandardFinding, ...]
 
     def as_dict(self) -> dict[str, object]:
-        return {"findings": [finding.__dict__ for finding in self.findings]}
+        """Return findings with a one-based selector for repeated rule IDs."""
+        return {
+            "findings": [
+                {**finding.__dict__, "occurrence": occurrence}
+                for finding, occurrence in self.findings_with_occurrences()
+            ]
+        }
+
+    def findings_with_occurrences(self) -> tuple[tuple[StandardFinding, int], ...]:
+        """Pair each finding with its one-based occurrence within that rule ID."""
+        occurrences: dict[str, int] = {}
+        selected: list[tuple[StandardFinding, int]] = []
+        for finding in self.findings:
+            occurrence = occurrences.get(finding.rule_id, 0) + 1
+            occurrences[finding.rule_id] = occurrence
+            # This selector lets a user pass the exact repeated standards
+            # finding to ``ai-explain`` without relying on output position.
+            selected.append((finding, occurrence))
+        return tuple(selected)
 
 
 @dataclass(frozen=True)

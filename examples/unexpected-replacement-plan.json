@@ -1,0 +1,16 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.6.0",
+  "resource_changes": [
+    {
+      "address": "aws_instance.web",
+      "mode": "managed",
+      "type": "aws_instance",
+      "name": "web",
+      "change": {
+        "actions": ["delete", "create"],
+        "replace_paths": [["user_data"]]
+      }
+    }
+  ]
+}

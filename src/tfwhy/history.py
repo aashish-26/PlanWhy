@@ -50,6 +50,8 @@ def clear_history(path: Path | None = None, confirmed: bool = False) -> None:
         raise HistoryError("history clear requires explicit confirmation")
     history_path = path or default_history_path()
     try:
+        # Delete only the explicitly selected local history file after confirmation.
+        # Terraform configuration, state, and plan files are never deletion targets.
         history_path.unlink()
     except FileNotFoundError:
         return
@@ -77,14 +79,19 @@ def _read_document(path: Path) -> dict[str, Any]:
 
 def _write_document(path: Path, document: dict[str, Any]) -> None:
     try:
+        # Create the opt-in history directory only when a user chose to save history.
         path.parent.mkdir(parents=True, exist_ok=True)
+        # Write sanitized history to a sibling temporary file first, so a failed
+        # write cannot leave a partially written history document at the target.
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
             json.dump(document, handle, indent=2, sort_keys=True)
             handle.write("\n")
             temporary = Path(handle.name)
+        # Atomically replace only the opted-in history file with the completed document.
         os.replace(temporary, path)
     except OSError as exc:
         try:
+            # Remove a failed temporary history file; never touch the existing target.
             temporary.unlink(missing_ok=True)
         except (OSError, UnboundLocalError):
             pass

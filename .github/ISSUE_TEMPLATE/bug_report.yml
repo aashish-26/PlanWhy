@@ -1,0 +1,63 @@
+name: Bug report
+description: Report an installation problem, incorrect finding, model issue, or documentation defect.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve TFWhy. Use only a synthetic or fully redacted example.
+        Do not include Terraform state, plan JSON, credentials, API keys, private source code,
+        raw model prompts/responses, or other sensitive infrastructure data.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Installation or packaging
+        - Incorrect finding or false positive
+        - Missing finding or false negative
+        - Local Ollama compatibility or response handling
+        - CLI output or usability
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Describe the outcome you expected without sharing sensitive artifacts.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the safe error text or output, with sensitive values removed.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal safe reproduction
+      description: Provide the exact TFWhy command and a synthetic or redacted configuration/plan description.
+      placeholder: |
+        tfwhy review --dir ./synthetic-example
+    validations:
+      required: true
+  - type: input
+    id: tfwhy_version
+    attributes:
+      label: TFWhy version or commit
+      placeholder: "0.1.0 or abc1234"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Python version, Terraform version, and Ollama model when applicable.
+      placeholder: "macOS 15; Python 3.13; Terraform 1.9; llama3.2:latest"
+    validations:
+      required: true

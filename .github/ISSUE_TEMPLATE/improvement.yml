@@ -1,0 +1,37 @@
+name: Focused improvement
+description: Propose a small, evidence-backed improvement for the public pilot.
+title: "[Improvement]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        TFWhy is a local-first public pilot. Share only synthetic or redacted examples;
+        never include credentials, state, raw plans, private Terraform code, or secrets.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Terraform problem
+      description: What real engineering problem would this solve, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: current_workflow
+    attributes:
+      label: Current workflow
+      description: Explain what you do today and where it is slow, unclear, or error-prone.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_outcome
+    attributes:
+      label: Proposed outcome
+      description: Describe the expected result, not a broad autonomous-agent solution.
+    validations:
+      required: true
+  - type: textarea
+    id: safe_example
+    attributes:
+      label: Synthetic or redacted example
+      description: Optional but helpful. Never include private infrastructure artifacts or secrets.

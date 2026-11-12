@@ -283,6 +283,19 @@ resource "aws_iam_policy" "wildcard" {
             self.assertNotIn(secret, result.stdout)
             self.assertNotIn(secret, result.stderr)
 
+    def test_review_renderers_expose_repeated_rule_occurrences(self):
+        config_dir = self.write_config('''resource "aws_s3_bucket" "first" {}
+resource "aws_s3_bucket" "second" {}
+''')
+        with patch("tfwhy.standards.subprocess.run", side_effect=self.successful_terraform):
+            report = review_configuration(config_dir)
+        for output in (render_review_terminal(report), render_review_markdown(report)):
+            self.assertIn("occurrence 1", output)
+            self.assertIn("occurrence 2", output)
+        document = json.loads(render_review_json(report))
+        tag_occurrences = [finding["occurrence"] for finding in document["findings"] if finding["rule_id"] == "TFWHY-TAG-001"]
+        self.assertEqual(tag_occurrences, [1, 2])
+
     def test_review_defaults_to_current_directory(self):
         config_dir = self.write_config("terraform {}\n")
         result = subprocess.run([sys.executable, "-m", "tfwhy", "review", "--format", "json"], cwd=config_dir, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)

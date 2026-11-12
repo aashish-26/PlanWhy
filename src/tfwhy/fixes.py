@@ -71,6 +71,8 @@ def apply_proposal(proposal: FixProposal, config_dir: Path) -> Path:
         raise FixError("moved.tf already exists; refusing to overwrite it")
     content = _moved_block(proposal.from_address or "", proposal.to_address or "")
     try:
+        # Create the approved moved.tf proposal only after rejecting an existing file.
+        # This writes Terraform configuration but never applies it or changes state.
         target.write_text(content, encoding="utf-8")
     except OSError as exc:
         raise FixError("could not write the approved proposal") from exc

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "replacement-likely-pattern",
+      "kind": "replacement",
+      "plan": "examples/unexpected-replacement-plan.json",
+      "config_dir": "examples/replacement-config",
+      "expected_findings": [
+        {"address": "aws_instance.web", "confidence": "Likely"}
+      ]
+    },
+    {
+      "id": "explicit-remote-drift",
+      "kind": "drift",
+      "plan": "tests/fixtures/phase11_drift/refresh_only_like_plan.json",
+      "expected_addresses": ["aws_instance.app", "aws_s3_bucket.logs"]
+    },
+    {
+      "id": "ordinary-plan-is-not-drift",
+      "kind": "drift",
+      "plan": "tests/fixtures/phase11_drift/no_drift_plan.json",
+      "expected_addresses": []
+    },
+    {
+      "id": "replacement-ai-allowlist",
+      "kind": "ai_payload",
+      "plan": "examples/unexpected-replacement-plan.json",
+      "config_dir": "examples/replacement-config",
+      "finding_id": "TFWHY-001",
+      "expected_kind": "replacement",
+      "expected_confidence": "Likely",
+      "prompt_must_contain": ["Likely", "user_data"],
+      "prompt_must_not_contain": ["aws_instance.web", "Possible replacement cause"]
+    }
+  ]
+}

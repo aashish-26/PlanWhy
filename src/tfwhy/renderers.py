@@ -207,10 +207,10 @@ def render_review_markdown(report: StandardsReport) -> str:
     lines = ["# Terraform Standards Review", ""]
     if not report.findings:
         lines.append("No findings.")
-    for finding in report.findings:
+    for finding, occurrence in report.findings_with_occurrences():
         location = f" ({finding.location})" if finding.location else ""
         lines.extend([
-            f"## {finding.rule_id}: {finding.severity}{location}",
+            f"## {finding.rule_id} (occurrence {occurrence}): {finding.severity}{location}",
             "",
             finding.explanation,
             "",
@@ -225,10 +225,10 @@ def render_review_terminal(report: StandardsReport) -> str:
     if not report.findings:
         return "Terraform standards review\nNo findings.\n"
     lines = ["Terraform standards review"]
-    for finding in report.findings:
+    for finding, occurrence in report.findings_with_occurrences():
         location = f" ({finding.location})" if finding.location else ""
         lines.extend([
-            f"- {finding.rule_id} [{finding.severity}]{location}: {finding.explanation}",
+            f"- {finding.rule_id} (occurrence {occurrence}) [{finding.severity}]{location}: {finding.explanation}",
             f"  evidence: {finding.evidence}",
             f"  remediation: {finding.remediation}",
         ])

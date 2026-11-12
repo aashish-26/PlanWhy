@@ -196,7 +196,7 @@ class AIExplanationTests(unittest.TestCase):
             self.assertEqual(main(["ai-explain", "--kind", "drift", "--finding", "TFWHY-DRIFT-001", "--model", "example-model"]), 2)
         self.assertIn("--plan is required", stderr.getvalue())
 
-    def test_ambiguous_standards_finding_is_not_sent_to_ollama(self):
+    def test_repeated_standards_finding_requires_an_explicit_occurrence(self):
         finding = StandardFinding("TFWHY-IAM-001", "Medium", None, "x", "x", "x")
         stderr = io.StringIO()
         with patch("tfwhy.cli.review_configuration", return_value=StandardsReport((finding, finding))):
@@ -205,7 +205,38 @@ class AIExplanationTests(unittest.TestCase):
                     self.assertEqual(main([
                         "ai-explain", "--kind", "standards", "--finding", "TFWHY-IAM-001", "--model", "example-model",
                     ]), 2)
-        self.assertIn("multiple standards findings", stderr.getvalue())
+        self.assertIn("--occurrence", stderr.getvalue())
+
+    def test_standards_occurrence_selects_one_repeated_finding_without_sending_location(self):
+        first = StandardFinding("TFWHY-TAG-001", "Medium", "first.tf", "first", "first", "first")
+        second = StandardFinding("TFWHY-TAG-001", "Medium", "second.tf", "second", "second", "second")
+        explanation = AIExplanation("example-model", "TFWHY-TAG-001", ("Fact",), ("Interpretation",), (), ())
+        with patch("tfwhy.cli.review_configuration", return_value=StandardsReport((first, second))):
+            with patch("tfwhy.cli.explain_with_ollama", return_value=explanation) as model:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(main([
+                        "ai-explain", "--kind", "standards", "--finding", "TFWHY-TAG-001", "--occurrence", "2", "--model", "example-model",
+                    ]), 0)
+        self.assertEqual(model.call_count, 1)
+        payload = model.call_args.args[0]
+        self.assertEqual(payload.finding_id, "TFWHY-TAG-001")
+        self.assertNotIn("second.tf", build_prompt(payload))
+
+    def test_invalid_standards_occurrence_and_plan_based_occurrence_are_safe_errors(self):
+        finding = StandardFinding("TFWHY-TAG-001", "Medium", None, "x", "x", "x")
+        with patch("tfwhy.cli.review_configuration", return_value=StandardsReport((finding,))):
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                self.assertEqual(main([
+                    "ai-explain", "--kind", "standards", "--finding", "TFWHY-TAG-001", "--occurrence", "2", "--model", "example-model",
+                ]), 2)
+            self.assertIn("does not identify", stderr.getvalue())
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(main([
+                "ai-explain", "--kind", "replacement", "--finding", "TFWHY-001", "--occurrence", "1", "--model", "example-model",
+            ]), 2)
+        self.assertIn("only for standards", stderr.getvalue())
 
 
 if __name__ == "__main__":

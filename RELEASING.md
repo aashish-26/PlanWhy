@@ -12,14 +12,20 @@ This document is the release checklist for the free, local-first CLI. It assumes
    python -m unittest discover -s tests -v
    ```
 
-4. Check formatting and whitespace:
+4. Run the versioned synthetic benchmark:
+
+   ```bash
+   python3 benchmarks/run.py
+   ```
+
+5. Check formatting and whitespace:
 
    ```bash
    terraform fmt -check -recursive tests/fixtures/corporate_project/infra
    git diff --check
    ```
 
-5. Run the offline fixture without cloud credentials:
+6. Run the offline fixture without cloud credentials:
 
    ```bash
    terraform -chdir=tests/fixtures/corporate_project/infra init -backend=false
@@ -29,8 +35,9 @@ This document is the release checklist for the free, local-first CLI. It assumes
    tfwhy explain /tmp/tfwhy-release.json --dir tests/fixtures/corporate_project/infra
    ```
 
-6. Confirm no plan, state, credential, history, or virtual-environment files are staged.
-7. Review the generated package metadata and console script in a clean environment.
+7. Confirm no plan, state, credential, history, or virtual-environment files are staged.
+8. Review the generated package metadata and console script in a clean environment.
+9. Verify every README command block in a clean or synthetic environment where feasible. Remove or label any command that cannot be verified safely.
 
 ## Local Package Smoke Test
 

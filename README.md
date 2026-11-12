@@ -1,8 +1,8 @@
-# tfwhy
+# TFWhy
 
-`tfwhy` is a local-first, deterministic Terraform plan explainer. Phase 1 reads Terraform plan JSON and reports resource actions without sending data over the network or requiring AI credentials.
+**TFWhy** means “Terraform: why did this change happen?” It is a local-first Python CLI that explains supplied Terraform plan evidence, reviews bounded configuration risks, proposes conservative refactorings, and offers optional local AI explanations without requiring cloud credentials.
 
-> 🧭 **Current status:** deterministic CLI complete, local Ollama explanations available by explicit opt-in, and no cloud credentials required for static analysis.
+> 🧭 **Current status:** TFWhy is a pre-1.0, GitHub-first public pilot. Please use synthetic or fully redacted inputs when reporting a problem.
 
 | Capability | Command | Safety boundary |
 | --- | --- | --- |
@@ -33,15 +33,7 @@ python -m pip install -e .
 
 No runtime dependency or cloud credential is required.
 
-For an install-once workflow from a published package, use `pipx` after a package is published:
-
-```bash
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-pipx install tfwhy  # requires a published package
-```
-
-For this local checkout or any unreleased development version, install directly from the repository:
+For an install-once workflow from this local checkout or another unreleased source checkout, install directly from that checkout:
 
 ```bash
 pipx install .
@@ -59,18 +51,21 @@ TFWhy is released under the [MIT License](LICENSE). It is still a pre-1.0 projec
 
 ## Quick start
 
+Install from this source checkout, confirm the version, then run the included synthetic replacement example:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e .
-tfwhy --help
+tfwhy --version
+tfwhy explain examples/unexpected-replacement-plan.json --dir examples/replacement-config
 ```
 
-The console command works from outside the checkout after installation. The full test suite can be run with `python -m unittest discover -s tests -v`.
+This reports a replacement and a **Likely** possible `timestamp()` pattern; it does not prove a root cause, contact a cloud provider, or modify files. See [examples/README.md](examples/README.md) for the input boundary. The console command works from outside the checkout after installation.
 
 ## Release and Contribution Hygiene
 
-See [RELEASING.md](RELEASING.md) for the pre-release checklist. Do not commit Terraform plans, state, credentials, variable files, local history, or virtual environments. Run the full test suite and inspect `git diff --check` before opening a release pull request.
+See [RELEASING.md](RELEASING.md) for the pre-release checklist. Do not commit Terraform plans, state, credentials, variable files, local history, or virtual environments. Run the full test suite, synthetic benchmark, and `git diff --check` before opening a release pull request.
 
 ## Repository Layout
 
@@ -97,15 +92,15 @@ tfwhy drift ./tfplan.json
 
 Use `--dir PATH` when the configuration is elsewhere. `explain` always requires an explicit plan path; TFWhy does not guess which plan to use. History is opt-in and defaults to `~/.tfwhy/history.json`, never the Terraform project directory. Use `--history-file PATH` for an explicit alternate location.
 
-### Upgrade and troubleshooting
+### Troubleshooting
 
 ```bash
-pipx upgrade tfwhy       # published-package installs
-pipx uninstall tfwhy
-python -m unittest discover -s tests -v
+tfwhy --version
+python3 -m unittest discover -s tests -v
+python3 benchmarks/run.py
 ```
 
-If `tfwhy` is not found after a `pipx` install, reopen the shell or ensure the pipx bin directory is on `PATH`. `pipx install tfwhy` is not currently verifiable because no PyPI release exists; use `pipx install .` from this checkout. Terraform is optional for plan explanation; `review` reports Terraform formatting/validation as unavailable when the executable is absent. AWS credentials are not required for offline plan JSON analysis.
+If `tfwhy` is not found after a `pipx` install, reopen the shell or ensure the pipx bin directory is on `PATH`. TFWhy is not currently published on PyPI; use `pipx install .` from this checkout. Terraform is optional for plan explanation; `review` reports Terraform formatting/validation as unavailable when the executable is absent. AWS credentials are not required for offline plan JSON analysis.
 
 ## Offline Terraform plan fixture
 
@@ -208,11 +203,12 @@ tfwhy ai-explain \
   --dir tests/fixtures/replacement_config \
   --model llama3.2
 
-# Standards: review must produce exactly one matching rule finding.
+# Standards: review output shows each rule's one-based occurrence selector.
 tfwhy review --dir ./infra
 tfwhy ai-explain \
   --kind standards \
-  --finding TFWHY-TF-002 \
+  --finding TFWHY-TAG-001 \
+  --occurrence 2 \
   --dir ./infra \
   --model llama3.2 \
   --format markdown
@@ -235,9 +231,10 @@ The AI command explains one existing deterministic finding; it does not discover
 - `could not find model 'name'`: run `ollama pull name`, then retry with the exact name from `ollama list`.
 - `--plan is required`: replacement and drift explanations need the same user-generated plan used by the deterministic command.
 - `finding ID does not identify a finding`: rerun `explain`, `drift`, or `review` and use an ID from that output.
+- `multiple standards findings`: use the `occurrence N` displayed beside the matching rule in review output, then add `--occurrence N`; the first matching rule is occurrence `1`.
 - Slow or failed responses: choose a model that fits available RAM/VRAM or pass `--timeout SECONDS` from 1 through 120.
 
-Replacement IDs are ordinal (`TFWHY-001` is the first replacement); drift IDs are also ordinal (`TFWHY-DRIFT-001` is the first drift finding). Standards explanations require exactly one finding with the selected stable rule ID. `--timeout` defaults to 30 seconds and accepts values from 1 through 120 seconds. A missing local service, model, malformed/empty reply, timeout, or oversized reply returns a non-zero error without changing the deterministic workflow.
+Replacement IDs are ordinal (`TFWHY-001` is the first replacement); drift IDs are also ordinal (`TFWHY-DRIFT-001` is the first drift finding). Standards explanations use a stable rule ID; if the rule appears multiple times, pass its one-based `--occurrence N` shown in review output. JSON review output includes an `occurrence` field for every finding. `--timeout` defaults to 30 seconds and accepts values from 1 through 120 seconds. A missing local service, model, malformed/empty reply, timeout, or oversized reply returns a non-zero error without changing the deterministic workflow.
 
 ### Local data and privacy boundary
 
@@ -251,7 +248,7 @@ Local model resource use depends on the model, context, and your hardware. Downl
 
 Reports and CLI errors contain only an explicit allowlist of plan metadata and safe structural diagnostics. They never include Terraform before/after values, sensitive values, complete change objects, or raw plan content. Terraform plan JSON can itself contain sensitive data, so reading a plan necessarily processes that input in memory. The core CLI makes no network calls and never runs `terraform apply` or `terraform destroy`.
 
-This release does not fully evaluate Terraform configuration, resolve arbitrary modules or variables, determine replacement root causes conclusively, run Terraform validation outside the Phase 3 review command, or verify fixes. The configuration scanner only inspects bounded, conservative evidence.
+This release does not fully evaluate Terraform configuration, resolve arbitrary modules or variables, or determine replacement root causes conclusively. Its `verify` command performs a deliberately narrow, plan-based check: it reports `verified` only when the supplied after-change plan shows the requested target as `no-op` and the old address absent. The configuration scanner only inspects bounded, conservative evidence.
 
 ## Replacement-cause analysis
 
@@ -349,8 +346,18 @@ The initial proposal scope is an unambiguous root-level resource rename or a sin
 Run the dependency-free test suite with:
 
 ```bash
-python -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
 ```
+
+## Synthetic benchmark
+
+Run the versioned, no-cloud benchmark from a source checkout:
+
+```bash
+python3 benchmarks/run.py
+```
+
+It checks a conservative replacement classification, explicit Terraform drift semantics, and the local-AI prompt allowlist. It does not claim broad provider compatibility, security coverage, or AI-answer quality. See [benchmarks/README.md](benchmarks/README.md) for the exact cases and safe model-review rubric.
 
 ## MVP scope
 
@@ -361,3 +368,11 @@ python -m unittest discover -s tests -v
 - Opt-in, sanitized local plan history with recurrence observations.
 
 Plan JSON, Terraform state, variable files, credentials, and sensitive configuration should never be committed. Terraform plan JSON may contain sensitive data and is processed in memory; TFWhy does not transmit it or persist raw plan values.
+
+## Feedback and contributions
+
+TFWhy is a GitHub-first public pilot, promoted through YouTube and developer feedback. Use the GitHub **Bug report** form for installation failures, reproducible false positives/negatives, unclear output, local-model compatibility, and documentation problems. Use the **Focused improvement** form for a specific Terraform workflow that needs to be better.
+
+Use a minimal **synthetic or fully redacted** reproduction. Include the `tfwhy --version` output, expected and actual behavior, Terraform version, operating system, and the exact safe command used. Never post credentials, state files, raw plans, private Terraform code, API keys, or unredacted model prompts/responses.
+
+Contributors should make focused changes, add regression coverage for bugs, run relevant tests plus the full suite where practical, and report exact results. Check `Plan.md` before proposing feature work so the public-pilot scope and safety boundaries remain intact.
