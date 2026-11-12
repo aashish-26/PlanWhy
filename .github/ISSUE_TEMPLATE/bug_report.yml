@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve TFWhy. Use only a synthetic or fully redacted example.
+        Thanks for helping improve PlanWhy. Use only a synthetic or fully redacted example.
         Do not include Terraform state, plan JSON, credentials, API keys, private source code,
         raw model prompts/responses, or other sensitive infrastructure data.
   - type: dropdown
@@ -42,15 +42,15 @@ body:
     id: reproduction
     attributes:
       label: Minimal safe reproduction
-      description: Provide the exact TFWhy command and a synthetic or redacted configuration/plan description.
+      description: Provide the exact PlanWhy command and a synthetic or redacted configuration/plan description.
       placeholder: |
-        tfwhy review --dir ./synthetic-example
+        planwhy review --dir ./synthetic-example
     validations:
       required: true
   - type: input
-    id: tfwhy_version
+    id: planwhy_version
     attributes:
-      label: TFWhy version or commit
+      label: PlanWhy version or commit
       placeholder: "0.1.0 or abc1234"
     validations:
       required: true

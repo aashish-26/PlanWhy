@@ -1,4 +1,4 @@
-"""Run TFWhy's versioned, synthetic Phase 13 benchmark without cloud access.
+"""Run PlanWhy's versioned, synthetic Phase 13 benchmark without cloud access.
 
 It is a small public regression harness for deterministic semantics and the AI
 prompt allowlist; it does not evaluate model-answer quality or real projects.
@@ -14,9 +14,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from tfwhy.ai import build_prompt, replacement_payload
-from tfwhy.analyzer import load_plan
-from tfwhy.replacement import analyze_replacements
+from planwhy.ai import build_prompt, replacement_payload
+from planwhy.analyzer import load_plan
+from planwhy.replacement import analyze_replacements
 
 
 def _load_case_summary(case: dict[str, Any]):

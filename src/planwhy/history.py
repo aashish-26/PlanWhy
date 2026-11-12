@@ -23,8 +23,8 @@ class HistoryError(ValueError):
 
 
 def default_history_path() -> Path:
-    configured = os.environ.get("TFWHY_HISTORY_FILE")
-    return Path(configured) if configured else Path.home() / ".tfwhy" / "history.json"
+    configured = os.environ.get("PLANWHY_HISTORY_FILE")
+    return Path(configured) if configured else Path.home() / ".planwhy" / "history.json"
 
 
 def save_history(summary: PlanSummary, path: Path | None = None) -> dict[str, Any]:

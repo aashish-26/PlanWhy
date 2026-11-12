@@ -59,7 +59,7 @@ class _Configuration:
 def analyze_replacements(summary: PlanSummary, config_dir: Path | None = None) -> PlanSummary:
     """Add replacement findings without retaining Terraform expressions or values."""
     # Plan metadata is useful on its own. Configuration inspection is optional
-    # so `tfwhy explain plan.json` remains local, deterministic, and credential-free.
+    # so `planwhy explain plan.json` remains local, deterministic, and credential-free.
     configuration = _load_configuration(config_dir) if config_dir is not None else _Configuration((), (), ())
     findings = tuple(_analyze_resource(resource, configuration) for resource in summary.resources if resource.category == "replace")
     return replace(summary, replacement_findings=findings)

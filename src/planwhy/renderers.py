@@ -1,4 +1,4 @@
-"""Render normalized TFWhy findings for terminal, Markdown, and JSON output.
+"""Render normalized PlanWhy findings for terminal, Markdown, and JSON output.
 
 Renderers consume only safe normalized models; they must not re-read raw plan
 data or expose Terraform values, secrets, or untrusted model data as facts.
@@ -149,7 +149,7 @@ def render_ai_json(payload: AIFindingPayload, explanation: AIExplanation) -> str
     """Render only validated model interpretation, never a finding mutation."""
     return json.dumps(
         {
-            "notice": "Untrusted local-model interpretation. Deterministic TFWhy findings are unchanged.",
+            "notice": "Untrusted local-model interpretation. Deterministic PlanWhy findings are unchanged.",
             "deterministic_context": payload.as_dict(),
             "explanation": explanation.as_dict(),
         },
@@ -160,9 +160,9 @@ def render_ai_json(payload: AIFindingPayload, explanation: AIExplanation) -> str
 
 def render_ai_markdown(payload: AIFindingPayload, explanation: AIExplanation) -> str:
     lines = [
-        "# TFWhy Local AI Explanation",
+        "# PlanWhy Local AI Explanation",
         "",
-        "> **Untrusted local-model interpretation.** Deterministic TFWhy findings are unchanged.",
+        "> **Untrusted local-model interpretation.** Deterministic PlanWhy findings are unchanged.",
         "",
         f"- Finding: `{explanation.finding_id}`",
         f"- Local model: `{explanation.model}`",
@@ -177,8 +177,8 @@ def render_ai_markdown(payload: AIFindingPayload, explanation: AIExplanation) ->
 
 def render_ai_terminal(payload: AIFindingPayload, explanation: AIExplanation) -> str:
     lines = [
-        "TFWhy local AI explanation (untrusted model interpretation)",
-        "Deterministic TFWhy findings are unchanged.",
+        "PlanWhy local AI explanation (untrusted model interpretation)",
+        "Deterministic PlanWhy findings are unchanged.",
         f"Finding: {explanation.finding_id}",
         f"Local model: {explanation.model}",
         "Deterministic context sent to the local model:",

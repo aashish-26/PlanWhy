@@ -32,7 +32,11 @@ env/
 .vscode/
 *.code-workspace
 
-# Local TFWhy data
+# Local PlanWhy data
+.planwhy/
+planwhy-history.json
+
+# Legacy TFWhy data (ignored during the pre-1.0 brand migration)
 .tfwhy/
 tfwhy-history.json
 Plan.md

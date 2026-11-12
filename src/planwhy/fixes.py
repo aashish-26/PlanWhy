@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .analyzer import PlanError, PlanSummary, ResourceSummary
 
-_FINDING_ID = re.compile(r"^TFWHY-(\d+)$")
+_FINDING_ID = re.compile(r"^PLANWHY-(\d+)$")
 _INDEX = re.compile(r"^(?P<base>.+)\[(?P<key>\"[^\"]+\"|\d+)\]$")
 
 
@@ -98,7 +98,7 @@ def verify_plan(summary: PlanSummary, from_address: str, to_address: str, kind: 
 def _resource_for_finding(summary: PlanSummary, finding_id: str) -> ResourceSummary | None:
     match = _FINDING_ID.fullmatch(finding_id)
     if not match:
-        raise FixError("finding ID must have the form TFWHY-NNN")
+        raise FixError("finding ID must have the form PLANWHY-NNN")
     index = int(match.group(1)) - 1
     replacements = [resource for resource in summary.resources if resource.category == "replace"]
     if index < 0 or index >= len(replacements):

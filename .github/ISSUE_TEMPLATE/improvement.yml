@@ -8,7 +8,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        TFWhy is a local-first public pilot. Share only synthetic or redacted examples;
+        PlanWhy is a local-first public pilot. Share only synthetic or redacted examples;
         never include credentials, state, raw plans, private Terraform code, or secrets.
   - type: textarea
     id: problem

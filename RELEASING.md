@@ -1,4 +1,4 @@
-# Releasing TFWhy
+# Releasing PlanWhy
 
 This document is the release checklist for the free, local-first CLI. It assumes a clean working tree and does not publish anything automatically.
 
@@ -30,9 +30,9 @@ This document is the release checklist for the free, local-first CLI. It assumes
    ```bash
    terraform -chdir=tests/fixtures/corporate_project/infra init -backend=false
    terraform -chdir=tests/fixtures/corporate_project/infra validate
-   terraform -chdir=tests/fixtures/corporate_project/infra plan -out=/tmp/tfwhy-release.tfplan
-   terraform -chdir=tests/fixtures/corporate_project/infra show -json /tmp/tfwhy-release.tfplan > /tmp/tfwhy-release.json
-   tfwhy explain /tmp/tfwhy-release.json --dir tests/fixtures/corporate_project/infra
+   terraform -chdir=tests/fixtures/corporate_project/infra plan -out=/tmp/planwhy-release.tfplan
+   terraform -chdir=tests/fixtures/corporate_project/infra show -json /tmp/planwhy-release.tfplan > /tmp/planwhy-release.json
+   planwhy explain /tmp/planwhy-release.json --dir tests/fixtures/corporate_project/infra
    ```
 
 7. Confirm no plan, state, credential, history, or virtual-environment files are staged.
@@ -44,23 +44,23 @@ This document is the release checklist for the free, local-first CLI. It assumes
 For an unreleased checkout:
 
 ```bash
-python3 -m venv /tmp/tfwhy-release-venv
-/tmp/tfwhy-release-venv/bin/python -m pip install -e .
+python3 -m venv /tmp/planwhy-release-venv
+/tmp/planwhy-release-venv/bin/python -m pip install -e .
 cd /tmp
-/tmp/tfwhy-release-venv/bin/tfwhy --help
+/tmp/planwhy-release-venv/bin/planwhy --help
 ```
 
 For an install-once local workflow:
 
 ```bash
 pipx install .
-tfwhy --help
+planwhy --help
 ```
 
-The `pipx install tfwhy` command should only be used after a package has actually been published to PyPI.
+The `pipx install planwhy` command should only be used after a package has actually been published to PyPI.
 
 ## Publish Later
 
 Publishing to PyPI requires a verified package account and an approved release version. Before publishing, build and inspect the artifacts with a trusted Python packaging workflow, upload only after review, and test installation from the published version in a clean environment.
 
-TFWhy must remain local-first: publishing the package must not add telemetry, cloud access, automatic model downloads, or a requirement for AWS credentials.
+PlanWhy must remain local-first: publishing the package must not add telemetry, cloud access, automatic model downloads, or a requirement for AWS credentials.

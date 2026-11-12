@@ -73,7 +73,7 @@ def propose_import(
 
     # A preview gets a predictable proposed filename.  Only `--out` makes a
     # path eligible for writing, which prevents an implicit project mutation.
-    target = output_path or Path("tfwhy-import.tf")
+    target = output_path or Path("planwhy-import.tf")
     content, starter_status, rationale = _content_for_import(
         address,
         import_id,
@@ -128,11 +128,11 @@ def _content_for_import(
 
     # The S3 import ID is the bucket name, which is enough to produce a tiny,
     # truthful starter block. Other providers need schema-specific arguments;
-    # guessing them would violate TFWhy's conservative generation policy.
+    # guessing them would violate PlanWhy's conservative generation policy.
     if resource_type == "aws_s3_bucket" and _is_root_unindexed(address):
         content += f"\nresource \"aws_s3_bucket\" \"{resource_name}\" {{\n  bucket = {json.dumps(import_id)}\n}}\n"
         return content, "generated", "The supplied import identifier is the bucket name for this supported aws_s3_bucket starter configuration."
-    return content, "unavailable", "No starter resource block was generated because this resource type or address needs provider-specific required arguments not supplied to TFWhy."
+    return content, "unavailable", "No starter resource block was generated because this resource type or address needs provider-specific required arguments not supplied to PlanWhy."
 
 
 def _is_root_unindexed(address: str) -> bool:

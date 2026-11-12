@@ -10,8 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from tfwhy.imports import ImportError, apply_import_proposal, propose_import  # noqa: E402
-from tfwhy.renderers import render_import_json, render_import_markdown, render_import_terminal  # noqa: E402
+from planwhy.imports import ImportError, apply_import_proposal, propose_import  # noqa: E402
+from planwhy.renderers import render_import_json, render_import_markdown, render_import_terminal  # noqa: E402
 
 
 class ImportProposalTests(unittest.TestCase):
@@ -69,7 +69,7 @@ class ImportProposalTests(unittest.TestCase):
         for output_format in ("terminal", "markdown", "json"):
             with self.subTest(output_format=output_format):
                 result = subprocess.run(
-                    [sys.executable, "-m", "tfwhy", "import", "--address", "aws_s3_bucket.logs", "--id", "example-logs", "--starter-config", "--format", output_format],
+                    [sys.executable, "-m", "planwhy", "import", "--address", "aws_s3_bucket.logs", "--id", "example-logs", "--starter-config", "--format", output_format],
                     cwd=ROOT,
                     env=env,
                     capture_output=True,
@@ -79,7 +79,7 @@ class ImportProposalTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0)
                 self.assertIn("aws_s3_bucket.logs", result.stdout)
         result = subprocess.run(
-            [sys.executable, "-m", "tfwhy", "import", "--address", "aws_s3_bucket.logs", "--id", "example-logs", "--apply"],
+            [sys.executable, "-m", "planwhy", "import", "--address", "aws_s3_bucket.logs", "--id", "example-logs", "--apply"],
             cwd=ROOT,
             env=env,
             capture_output=True,
@@ -92,7 +92,7 @@ class ImportProposalTests(unittest.TestCase):
         directory = self.write_dir()
         target = directory / "generated-import.tf"
         applied = subprocess.run(
-            [sys.executable, "-m", "tfwhy", "import", "--address", "aws_s3_bucket.logs", "--id", "example-logs", "--out", str(target), "--starter-config", "--apply", "--approve"],
+            [sys.executable, "-m", "planwhy", "import", "--address", "aws_s3_bucket.logs", "--id", "example-logs", "--out", str(target), "--starter-config", "--apply", "--approve"],
             cwd=ROOT,
             env=env,
             capture_output=True,
@@ -103,7 +103,7 @@ class ImportProposalTests(unittest.TestCase):
         self.assertTrue(target.exists())
 
         malformed = subprocess.run(
-            [sys.executable, "-m", "tfwhy", "import", "--address", "not a resource", "--id", "SYNTHETIC_SECRET_MARKER"],
+            [sys.executable, "-m", "planwhy", "import", "--address", "not a resource", "--id", "SYNTHETIC_SECRET_MARKER"],
             cwd=ROOT,
             env=env,
             capture_output=True,

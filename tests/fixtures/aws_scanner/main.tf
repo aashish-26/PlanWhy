@@ -21,7 +21,7 @@ provider "aws" {
 }
 
 variable "aws_region" {
-  description = "AWS region for the TFWhy test environment."
+  description = "AWS region for the PlanWhy test environment."
   type        = string
   default     = "ap-south-1"
 }
@@ -29,7 +29,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Prefix for test resources."
   type        = string
-  default     = "tfwhy-lab"
+  default     = "planwhy-lab"
 }
 
 variable "instance_type" {
@@ -58,7 +58,7 @@ locals {
   name = "${var.project_name}-${random_id.suffix.hex}"
   common_tags = {
     Project     = var.project_name
-    Environment = "tfwhy-test"
+    Environment = "planwhy-test"
     ManagedBy   = "Terraform"
   }
 }
@@ -110,7 +110,7 @@ resource "aws_route_table_association" "public_b" {
   route_table_id = aws_route_table.public.id
 }
 
-# Intentionally public HTTP ingress for testing TFWhy's security findings.
+# Intentionally public HTTP ingress for testing PlanWhy's security findings.
 resource "aws_security_group" "alb" {
   name        = "${local.name}-alb-sg"
   description = "Allow HTTP to the demo load balancer"
@@ -174,7 +174,7 @@ resource "aws_instance" "web" {
 
   user_data = <<-USERDATA
     #!/bin/bash
-    echo "TFWhy test instance" > /tmp/tfwhy-test.txt
+    echo "PlanWhy test instance" > /tmp/planwhy-test.txt
   USERDATA
 
   tags = merge(local.common_tags, { Name = "${local.name}-web" })
@@ -288,7 +288,7 @@ resource "aws_kinesis_firehose_delivery_stream" "logs" {
   depends_on = [aws_iam_role_policy.firehose_s3]
 }
 
-# Additional intentionally unsafe resources for local TFWhy review testing.
+# Additional intentionally unsafe resources for local PlanWhy review testing.
 # These examples contain no real credentials and must not be applied.
 resource "aws_s3_bucket_public_access_block" "logs" {
   bucket = aws_s3_bucket.logs.id
@@ -331,8 +331,8 @@ resource "aws_db_instance" "public_test" {
   engine                     = "postgres"
   engine_version             = "15.5"
   instance_class             = "db.t3.micro"
-  db_name                    = "tfwhy"
-  username                   = "tfwhy_test_admin"
+  db_name                    = "planwhy"
+  username                   = "planwhy_test_admin"
   manage_master_user_password = true
   publicly_accessible        = true
   storage_encrypted          = false

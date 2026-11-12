@@ -130,42 +130,42 @@ def _load_blocks(config_dir: Path) -> tuple[tuple[_Block, ...], tuple[Path, ...]
 
 
 def _malformed_findings(paths: tuple[Path, ...], skipped: set[str]) -> list[StandardFinding]:
-    if "TFWHY-CONFIG-001" in skipped:
+    if "PLANWHY-CONFIG-001" in skipped:
         return []
-    return [StandardFinding("TFWHY-CONFIG-001", "Medium", str(path), "Terraform configuration could not be parsed as a balanced block.", "Unbalanced or unreadable .tf file structure detected.", "Correct the configuration syntax and rerun the review.") for path in paths]
+    return [StandardFinding("PLANWHY-CONFIG-001", "Medium", str(path), "Terraform configuration could not be parsed as a balanced block.", "Unbalanced or unreadable .tf file structure detected.", "Correct the configuration syntax and rerun the review.") for path in paths]
 
 
 def _version_findings(blocks: tuple[_Block, ...], skipped: set[str]) -> list[StandardFinding]:
     findings: list[StandardFinding] = []
     terraform_blocks = [block for block in blocks if block.kind == "terraform"]
-    if not terraform_blocks and "TFWHY-TF-001" not in skipped:
-        findings.append(StandardFinding("TFWHY-TF-001", "Medium", None, "No Terraform required_version constraint was found.", "No terraform block with required_version was detected.", "Add a bounded required_version constraint."))
+    if not terraform_blocks and "PLANWHY-TF-001" not in skipped:
+        findings.append(StandardFinding("PLANWHY-TF-001", "Medium", None, "No Terraform required_version constraint was found.", "No terraform block with required_version was detected.", "Add a bounded required_version constraint."))
     for block in terraform_blocks:
         constraint = _attribute_value(block.body, "required_version")
-        if constraint is None and "TFWHY-TF-001" not in skipped:
-            findings.append(StandardFinding("TFWHY-TF-001", "Medium", str(block.path), "The Terraform block has no required_version constraint.", "required_version is absent.", "Add a bounded required_version constraint."))
-        elif constraint is not None and _is_unbounded(constraint) and "TFWHY-TF-002" not in skipped:
-            findings.append(StandardFinding("TFWHY-TF-002", "Low", str(block.path), "The Terraform version constraint is not bounded.", "The constraint has no upper compatibility bound.", "Use a bounded constraint such as ~> or an explicit upper bound."))
+        if constraint is None and "PLANWHY-TF-001" not in skipped:
+            findings.append(StandardFinding("PLANWHY-TF-001", "Medium", str(block.path), "The Terraform block has no required_version constraint.", "required_version is absent.", "Add a bounded required_version constraint."))
+        elif constraint is not None and _is_unbounded(constraint) and "PLANWHY-TF-002" not in skipped:
+            findings.append(StandardFinding("PLANWHY-TF-002", "Low", str(block.path), "The Terraform version constraint is not bounded.", "The constraint has no upper compatibility bound.", "Use a bounded constraint such as ~> or an explicit upper bound."))
 
-        if "required_providers" not in block.body and "TFWHY-PROVIDER-001" not in skipped:
-            findings.append(StandardFinding("TFWHY-PROVIDER-001", "Medium", str(block.path), "No required provider constraints were found.", "required_providers is absent.", "Declare required providers with source and version constraints."))
+        if "required_providers" not in block.body and "PLANWHY-PROVIDER-001" not in skipped:
+            findings.append(StandardFinding("PLANWHY-PROVIDER-001", "Medium", str(block.path), "No required provider constraints were found.", "required_providers is absent.", "Declare required providers with source and version constraints."))
         elif "required_providers" in block.body:
             provider_section = block.body.split("required_providers", 1)[1]
             versions = re.findall(r"\bversion\s*=\s*\"([^\"]+)\"", provider_section)
-            if not versions and "TFWHY-PROVIDER-001" not in skipped:
-                findings.append(StandardFinding("TFWHY-PROVIDER-001", "Medium", str(block.path), "A required_providers block has no provider version constraints.", "No version attribute was detected in required_providers.", "Pin each provider to a bounded compatible constraint."))
-            elif any(_is_unbounded(version) for version in versions) and "TFWHY-PROVIDER-002" not in skipped:
-                findings.append(StandardFinding("TFWHY-PROVIDER-002", "Low", str(block.path), "At least one provider constraint is not bounded.", "A provider constraint has no upper compatibility bound.", "Use a bounded provider constraint."))
+            if not versions and "PLANWHY-PROVIDER-001" not in skipped:
+                findings.append(StandardFinding("PLANWHY-PROVIDER-001", "Medium", str(block.path), "A required_providers block has no provider version constraints.", "No version attribute was detected in required_providers.", "Pin each provider to a bounded compatible constraint."))
+            elif any(_is_unbounded(version) for version in versions) and "PLANWHY-PROVIDER-002" not in skipped:
+                findings.append(StandardFinding("PLANWHY-PROVIDER-002", "Low", str(block.path), "At least one provider constraint is not bounded.", "A provider constraint has no upper compatibility bound.", "Use a bounded provider constraint."))
             # HashiCorp documents this source as an old provider that is
             # incompatible with Terraform 0.11+. Restrict the check to a
             # literal line so comments and computed provider selections stay
             # inconclusive instead of receiving invented migration advice.
             if (
-                "TFWHY-UPGRADE-001" not in skipped
+                "PLANWHY-UPGRADE-001" not in skipped
                 and "hashicorp/terraform" in _literal_provider_sources(provider_section)
             ):
                 findings.append(StandardFinding(
-                    "TFWHY-UPGRADE-001",
+                    "PLANWHY-UPGRADE-001",
                     "Medium",
                     str(block.path),
                     "The legacy hashicorp/terraform provider source is incompatible with Terraform 0.11 and later.",
@@ -178,12 +178,12 @@ def _version_findings(blocks: tuple[_Block, ...], skipped: set[str]) -> list[Sta
 def _configuration_findings(blocks: tuple[_Block, ...], required_tags: tuple[str, ...], skipped: set[str], variable_defaults: dict[str, str]) -> list[StandardFinding]:
     findings: list[StandardFinding] = []
     for block in blocks:
-        if block.kind in {"variable", "output"} and not _has_attribute(block.body, "description") and "TFWHY-DOC-001" not in skipped:
-            findings.append(StandardFinding("TFWHY-DOC-001", "Low", str(block.path), f"The {block.kind} block has no description.", "description is absent.", f"Add a description to the {block.kind} block."))
+        if block.kind in {"variable", "output"} and not _has_attribute(block.body, "description") and "PLANWHY-DOC-001" not in skipped:
+            findings.append(StandardFinding("PLANWHY-DOC-001", "Low", str(block.path), f"The {block.kind} block has no description.", "description is absent.", f"Add a description to the {block.kind} block."))
         if block.kind == "resource":
             findings.extend(_resource_findings(block, required_tags, skipped, variable_defaults))
-            if block.second_label and not _SNAKE_CASE.fullmatch(block.second_label) and "TFWHY-NAME-001" not in skipped:
-                findings.append(StandardFinding("TFWHY-NAME-001", "Low", str(block.path), "The resource name does not follow lowercase snake_case.", "The resource label violates the configured basic naming convention.", "Rename the resource using lowercase letters, digits, and underscores."))
+            if block.second_label and not _SNAKE_CASE.fullmatch(block.second_label) and "PLANWHY-NAME-001" not in skipped:
+                findings.append(StandardFinding("PLANWHY-NAME-001", "Low", str(block.path), "The resource name does not follow lowercase snake_case.", "The resource label violates the configured basic naming convention.", "Rename the resource using lowercase letters, digits, and underscores."))
     return findings
 
 
@@ -191,7 +191,7 @@ def _resource_findings(block: _Block, required_tags: tuple[str, ...], skipped: s
     findings: list[StandardFinding] = []
     body = block.body
     resource_type = block.first_label or ""
-    if resource_type.startswith("aws_") and resource_type not in {"aws_security_group_rule", "aws_iam_policy", "aws_iam_role_policy"} and required_tags and "TFWHY-TAG-001" not in skipped:
+    if resource_type.startswith("aws_") and resource_type not in {"aws_security_group_rule", "aws_iam_policy", "aws_iam_role_policy"} and required_tags and "PLANWHY-TAG-001" not in skipped:
         tags_match = re.search(r"\btags\s*=\s*\{(.*?)\}", body, re.DOTALL)
         if tags_match:
             present = set(re.findall(r"^\s*([A-Za-z_][A-Za-z0-9_-]*)\s*=", tags_match.group(1), re.MULTILINE))
@@ -201,37 +201,37 @@ def _resource_findings(block: _Block, required_tags: tuple[str, ...], skipped: s
         else:
             missing = list(required_tags)
         for tag in missing:
-            findings.append(StandardFinding("TFWHY-TAG-001", "Medium", str(block.path), "A taggable AWS resource is missing a required tag.", f"Required tag {tag!r} was not found in a literal tags map.", "Add the required tag or configure the applicable tag policy."))
+            findings.append(StandardFinding("PLANWHY-TAG-001", "Medium", str(block.path), "A taggable AWS resource is missing a required tag.", f"Required tag {tag!r} was not found in a literal tags map.", "Add the required tag or configure the applicable tag policy."))
 
-    if resource_type == "aws_security_group" and "TFWHY-SEC-001" not in skipped:
+    if resource_type == "aws_security_group" and "PLANWHY-SEC-001" not in skipped:
         ingress_blocks = re.findall(r"\bingress\s*\{(.*?)\}", body, re.DOTALL)
         if any(_public_ingress(ingress, variable_defaults) for ingress in ingress_blocks):
-            findings.append(StandardFinding("TFWHY-SEC-001", "High", str(block.path), "A security-group ingress rule permits public network access.", "An ingress block contains an unrestricted IPv4 or IPv6 source.", "Restrict ingress sources to the smallest required CIDR ranges and ports."))
+            findings.append(StandardFinding("PLANWHY-SEC-001", "High", str(block.path), "A security-group ingress rule permits public network access.", "An ingress block contains an unrestricted IPv4 or IPv6 source.", "Restrict ingress sources to the smallest required CIDR ranges and ports."))
 
     # Keep IAM and network analysis narrow: it only emits a finding for static,
     # directly visible configuration. Expressions it cannot inspect are not
     # treated as either safe or unsafe.
     findings.extend(_permission_findings(block, skipped))
 
-    if resource_type in {"aws_ebs_volume", "aws_db_instance", "aws_rds_cluster", "aws_s3_bucket"} and "TFWHY-SEC-002" not in skipped:
+    if resource_type in {"aws_ebs_volume", "aws_db_instance", "aws_rds_cluster", "aws_s3_bucket"} and "PLANWHY-SEC-002" not in skipped:
         encrypted = re.search(r"\b(?:encrypted|storage_encrypted)\s*=\s*true\b", body)
         s3_encryption = "server_side_encryption_configuration" in body
         if not encrypted and not (resource_type == "aws_s3_bucket" and s3_encryption):
-            findings.append(StandardFinding("TFWHY-SEC-002", "Medium", str(block.path), "A supported storage resource has no explicit encryption configuration.", "No explicit encryption setting was detected for this resource type.", "Enable the provider-supported encryption setting and verify the resulting plan."))
+            findings.append(StandardFinding("PLANWHY-SEC-002", "Medium", str(block.path), "A supported storage resource has no explicit encryption configuration.", "No explicit encryption setting was detected for this resource type.", "Enable the provider-supported encryption setting and verify the resulting plan."))
     return findings
 
 
 def _terraform_tool_findings(config_dir: Path, skipped: set[str]) -> list[StandardFinding]:
     findings: list[StandardFinding] = []
-    commands = (("TFWHY-FMT-001", ("terraform", "fmt", "-check", "-recursive"), "Terraform formatting check failed.", "Run terraform fmt and review the resulting formatting."), ("TFWHY-VALIDATE-001", ("terraform", "validate", "-no-color"), "Terraform validation failed.", "Fix the reported Terraform configuration errors and rerun validation."))
+    commands = (("PLANWHY-FMT-001", ("terraform", "fmt", "-check", "-recursive"), "Terraform formatting check failed.", "Run terraform fmt and review the resulting formatting."), ("PLANWHY-VALIDATE-001", ("terraform", "validate", "-no-color"), "Terraform validation failed.", "Fix the reported Terraform configuration errors and rerun validation."))
     for rule_id, command, explanation, remediation in commands:
         if rule_id in skipped:
             continue
         try:
             result = subprocess.run(command, cwd=config_dir, capture_output=True, text=True, check=False, timeout=60)
         except FileNotFoundError:
-            if "TFWHY-TOOL-001" not in skipped:
-                findings.append(StandardFinding("TFWHY-TOOL-001", "Info", None, "Terraform is not installed; Terraform-dependent checks were unavailable.", "The terraform executable was not found.", "Install Terraform to enable formatting and validation checks."))
+            if "PLANWHY-TOOL-001" not in skipped:
+                findings.append(StandardFinding("PLANWHY-TOOL-001", "Info", None, "Terraform is not installed; Terraform-dependent checks were unavailable.", "The terraform executable was not found.", "Install Terraform to enable formatting and validation checks."))
             return findings
         except (OSError, subprocess.TimeoutExpired):
             findings.append(StandardFinding(rule_id, "Medium", None, explanation, "Terraform could not complete the requested check.", remediation))
@@ -282,28 +282,28 @@ def _permission_findings(block: _Block, skipped: set[str]) -> list[StandardFindi
                 continue
             actions = _literal_attribute_strings(statement, "Action")
             resources = _literal_attribute_strings(statement, "Resource")
-            if actions is not None and "TFWHY-IAM-001" not in skipped:
+            if actions is not None and "PLANWHY-IAM-001" not in skipped:
                 if "*" in actions:
-                    findings.append(StandardFinding("TFWHY-IAM-001", "High", str(block.path), "An IAM Allow statement grants all actions.", "A statically parsed Allow statement has Action set to a global wildcard.", "Replace the wildcard with the smallest set of required service actions and review the resulting policy."))
+                    findings.append(StandardFinding("PLANWHY-IAM-001", "High", str(block.path), "An IAM Allow statement grants all actions.", "A statically parsed Allow statement has Action set to a global wildcard.", "Replace the wildcard with the smallest set of required service actions and review the resulting policy."))
                 elif any(action.endswith(":*") for action in actions):
-                    findings.append(StandardFinding("TFWHY-IAM-001", "Medium", str(block.path), "An IAM Allow statement grants every action in a service.", "A statically parsed Allow statement has a service action wildcard.", "Replace the service wildcard with the smallest set of required actions and review the resulting policy."))
-            if resources is not None and "*" in resources and "TFWHY-IAM-002" not in skipped:
-                findings.append(StandardFinding("TFWHY-IAM-002", "Medium", str(block.path), "An IAM Allow statement applies to every resource.", "A statically parsed Allow statement has Resource set to a global wildcard.", "Restrict the policy to required resource ARNs where the service supports them."))
+                    findings.append(StandardFinding("PLANWHY-IAM-001", "Medium", str(block.path), "An IAM Allow statement grants every action in a service.", "A statically parsed Allow statement has a service action wildcard.", "Replace the service wildcard with the smallest set of required actions and review the resulting policy."))
+            if resources is not None and "*" in resources and "PLANWHY-IAM-002" not in skipped:
+                findings.append(StandardFinding("PLANWHY-IAM-002", "Medium", str(block.path), "An IAM Allow statement applies to every resource.", "A statically parsed Allow statement has Resource set to a global wildcard.", "Restrict the policy to required resource ARNs where the service supports them."))
 
     if resource_type == "aws_security_group":
         for egress in re.findall(r"\begress\s*\{(.*?)\}", block.body, re.DOTALL):
-            if _allows_all_public_egress(egress) and "TFWHY-NET-002" not in skipped:
-                findings.append(StandardFinding("TFWHY-NET-002", "Medium", str(block.path), "A security-group egress rule permits all outbound traffic.", "A statically parsed egress block allows all protocols to an unrestricted IPv4 or IPv6 destination.", "Restrict egress destinations, protocols, and ports to the services the workload needs."))
+            if _allows_all_public_egress(egress) and "PLANWHY-NET-002" not in skipped:
+                findings.append(StandardFinding("PLANWHY-NET-002", "Medium", str(block.path), "A security-group egress rule permits all outbound traffic.", "A statically parsed egress block allows all protocols to an unrestricted IPv4 or IPv6 destination.", "Restrict egress destinations, protocols, and ports to the services the workload needs."))
 
     if resource_type == "aws_security_group_rule":
         rule_type = _literal_attribute(block.body, "type")
-        if rule_type == "ingress" and _contains_public_cidr(block.body) and "TFWHY-SEC-001" not in skipped:
-            findings.append(StandardFinding("TFWHY-SEC-001", "High", str(block.path), "A standalone security-group rule permits public network ingress.", "A statically parsed ingress rule contains an unrestricted IPv4 or IPv6 source.", "Restrict ingress sources to the smallest required CIDR ranges and ports."))
-        if rule_type == "egress" and _allows_all_public_egress(block.body) and "TFWHY-NET-002" not in skipped:
-            findings.append(StandardFinding("TFWHY-NET-002", "Medium", str(block.path), "A standalone security-group rule permits all outbound traffic.", "A statically parsed egress rule allows all protocols to an unrestricted IPv4 or IPv6 destination.", "Restrict egress destinations, protocols, and ports to the services the workload needs."))
+        if rule_type == "ingress" and _contains_public_cidr(block.body) and "PLANWHY-SEC-001" not in skipped:
+            findings.append(StandardFinding("PLANWHY-SEC-001", "High", str(block.path), "A standalone security-group rule permits public network ingress.", "A statically parsed ingress rule contains an unrestricted IPv4 or IPv6 source.", "Restrict ingress sources to the smallest required CIDR ranges and ports."))
+        if rule_type == "egress" and _allows_all_public_egress(block.body) and "PLANWHY-NET-002" not in skipped:
+            findings.append(StandardFinding("PLANWHY-NET-002", "Medium", str(block.path), "A standalone security-group rule permits all outbound traffic.", "A statically parsed egress rule allows all protocols to an unrestricted IPv4 or IPv6 destination.", "Restrict egress destinations, protocols, and ports to the services the workload needs."))
 
-    if resource_type == "aws_network_acl_rule" and _risky_public_network_acl_ingress(block.body) and "TFWHY-NET-003" not in skipped:
-        findings.append(StandardFinding("TFWHY-NET-003", "Medium", str(block.path), "A network ACL allows public ingress to a sensitive port or all protocols.", "A statically parsed inbound Allow rule uses an unrestricted source and exposes SSH, RDP, or all protocols. This does not establish reachability or exploitability.", "Restrict the source CIDR and limit the ports to the required network path."))
+    if resource_type == "aws_network_acl_rule" and _risky_public_network_acl_ingress(block.body) and "PLANWHY-NET-003" not in skipped:
+        findings.append(StandardFinding("PLANWHY-NET-003", "Medium", str(block.path), "A network ACL allows public ingress to a sensitive port or all protocols.", "A statically parsed inbound Allow rule uses an unrestricted source and exposes SSH, RDP, or all protocols. This does not establish reachability or exploitability.", "Restrict the source CIDR and limit the ports to the required network path."))
     return findings
 
 

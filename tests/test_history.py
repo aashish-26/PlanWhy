@@ -11,8 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from tfwhy.analyzer import load_plan  # noqa: E402
-from tfwhy.history import HistoryError, clear_history, list_history, save_history  # noqa: E402
+from planwhy.analyzer import load_plan  # noqa: E402
+from planwhy.history import HistoryError, clear_history, list_history, save_history  # noqa: E402
 
 
 class HistoryTests(unittest.TestCase):
@@ -43,18 +43,18 @@ class HistoryTests(unittest.TestCase):
     def test_save_is_opt_in_and_cli_history_commands_persist_safely(self):
         plan_path = self.write_plan()
         env = {"PYTHONPATH": str(ROOT / "src")}
-        no_save = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(plan_path), "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        no_save = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(plan_path), "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(no_save.returncode, 0)
         self.assertFalse(self.history_path.exists())
 
-        saved = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(plan_path), "--save-history", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        saved = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(plan_path), "--save-history", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(saved.returncode, 0)
         content = self.history_path.read_text(encoding="utf-8")
         self.assertNotIn("SYNTHETIC_SECRET_MARKER", content)
         self.assertNotIn('"before"', content)
         self.assertNotIn('"after"', content)
 
-        shown = subprocess.run([sys.executable, "-m", "tfwhy", "history", "show", "1", "--history-file", str(self.history_path), "--format", "json"], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        shown = subprocess.run([sys.executable, "-m", "planwhy", "history", "show", "1", "--history-file", str(self.history_path), "--format", "json"], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(shown.returncode, 0)
         self.assertIn('"id": "1"', shown.stdout)
         self.assertNotIn("SYNTHETIC_SECRET_MARKER", shown.stdout)
@@ -94,16 +94,16 @@ class HistoryTests(unittest.TestCase):
     def test_cli_clear_confirmation_and_corrupt_file_error(self):
         self.history_path.write_text("not json", encoding="utf-8")
         env = {"PYTHONPATH": str(ROOT / "src")}
-        result = subprocess.run([sys.executable, "-m", "tfwhy", "history", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        result = subprocess.run([sys.executable, "-m", "planwhy", "history", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 2)
         self.assertIn("corrupt", result.stderr)
 
-        result = subprocess.run([sys.executable, "-m", "tfwhy", "history", "clear", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        result = subprocess.run([sys.executable, "-m", "planwhy", "history", "clear", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 2)
         self.assertIn("confirmation", result.stderr)
         self.assertTrue(self.history_path.exists())
 
-        result = subprocess.run([sys.executable, "-m", "tfwhy", "history", "clear", "--confirm", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
+        result = subprocess.run([sys.executable, "-m", "planwhy", "history", "clear", "--confirm", "--history-file", str(self.history_path)], cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0)
         self.assertFalse(self.history_path.exists())
 

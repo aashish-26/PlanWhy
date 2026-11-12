@@ -27,7 +27,7 @@
       "kind": "ai_payload",
       "plan": "examples/unexpected-replacement-plan.json",
       "config_dir": "examples/replacement-config",
-      "finding_id": "TFWHY-001",
+      "finding_id": "PLANWHY-001",
       "expected_kind": "replacement",
       "expected_confidence": "Likely",
       "prompt_must_contain": ["Likely", "user_data"],

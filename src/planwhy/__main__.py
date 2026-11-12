@@ -1,4 +1,4 @@
-"""Support ``python -m tfwhy`` by delegating to the safe CLI entry point."""
+"""Support ``python -m planwhy`` by delegating to the safe CLI entry point."""
 
 import sys
 

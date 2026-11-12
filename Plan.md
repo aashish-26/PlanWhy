@@ -1,4 +1,4 @@
-# TFWhy — Product Plan and Engineering Roadmap
+# PlanWhy — Product Plan and Engineering Roadmap
 
 > **Purpose:** the source of truth for product direction, safety constraints, phase status, and implementation decisions. Attach this file to coding prompts. `README.md` is the public human-facing guide; its required contents are specified in [README.md specification](#9-readmemd-specification-for-future-agents).
 
@@ -6,14 +6,14 @@
 
 | Item | Decision |
 | --- | --- |
-| Name | **TFWhy** — Terraform + “Why did this happen?” |
+| Name | **PlanWhy** — Terraform + “Why did this happen?” |
 | Product | Local-first Terraform engineering companion |
 | Interface | Python CLI |
 | Primary users | Platform/DevOps/SRE engineers, Terraform consultants, and infrastructure teams |
 | License and launch | Free, MIT-licensed, GitHub-first public pilot promoted through YouTube and developer feedback |
 | Current state | Phases 1–12 reported complete; Phase 13 (public pilot) is next |
 
-TFWhy helps an engineer understand Terraform changes, investigate supported replacement and drift evidence, review bounded risks and standards issues, and evaluate a proposed fix. It is **not** a replacement for Terraform, provider documentation, security scanners, or human review.
+PlanWhy helps an engineer understand Terraform changes, investigate supported replacement and drift evidence, review bounded risks and standards issues, and evaluate a proposed fix. It is **not** a replacement for Terraform, provider documentation, security scanners, or human review.
 
 ### Product promise
 
@@ -43,7 +43,7 @@ TFWhy helps an engineer understand Terraform changes, investigate supported repl
 
 - `replace_paths` identifies a path that triggered replacement; it does **not** prove the upstream business or configuration root cause.
 - `count`, `for_each`, timestamps, data sources, AMI lookups, and random resources are not root-cause proof by themselves.
-- TFWhy’s drift analysis is evidence-based and offline: it can interpret supplied configuration, state-derived material, or a user-generated plan. It does **not** connect to a provider, refresh remote state, independently discover live drift, or reliably determine who changed a remote resource.
+- PlanWhy’s drift analysis is evidence-based and offline: it can interpret supplied configuration, state-derived material, or a user-generated plan. It does **not** connect to a provider, refresh remote state, independently discover live drift, or reliably determine who changed a remote resource.
 - A Terraform validation failure caused by an unavailable provider/plugin must be reported as that limitation, not as a configuration defect.
 
 ## 3. Architecture boundary
@@ -75,7 +75,7 @@ Architecture requirements:
 
 ## 4. Evidence status and repository audit note
 
-The following is **historical, user-reported project evidence** recovered from the prior plan. It is useful context, not a substitute for rerunning checks in the actual TFWhy checkout.
+The following is **historical, user-reported project evidence** recovered from the prior plan. It is useful context, not a substitute for rerunning checks in the actual PlanWhy checkout.
 
 | Phase | Status | Reported evidence |
 | --- | --- | --- |
@@ -92,7 +92,9 @@ The following is **historical, user-reported project evidence** recovered from t
 | 11 — Drift and upgrade assistance | Complete | 58 tests reported; AWS fixture validation blocked by unavailable provider |
 | 12 — Optional local AI explanations | Complete | 72 tests reported passing; local `llama3.2` replacement, standards, and drift smoke tests reported passing |
 
-**Current repository audit (2026-11-12):** the actual checkout, package metadata, MIT license, release checklist, CI workflow, CLI help, source, and tests were inspected. The code matches the local-first, deterministic-core, explicit-Ollama, no-apply/no-destroy architecture in this plan. The full suite passed with 77 tests. A clean temporary-environment build produced and installed the `tfwhy 0.1.0` wheel, and the installed console script ran from outside the checkout. Safe deterministic CLI smoke checks passed for `explain`, `drift`, `review`, and import preview. Real local `llama3.2:latest` smoke tests passed for a replacement explanation and a repeated standards-rule explanation. A repeated-standards-finding AI-selection defect was fixed with an explicit one-based `--occurrence N` selector; its payload remains the same allowlisted rule context and never includes a location, address, or finding free text. Phase 13 readiness now also includes `tfwhy --version`, visible one-based occurrences in terminal/Markdown review output plus JSON `occurrence` fields, a public synthetic first-run example, and a versioned no-cloud benchmark that runs as part of the suite.
+**Current repository audit (2026-11-12):** the actual checkout, package metadata, MIT license, release checklist, CI workflow, CLI help, source, and tests were inspected. The code matches the local-first, deterministic-core, explicit-Ollama, no-apply/no-destroy architecture in this plan. The full suite passed with 77 tests. A clean temporary-environment build produced and installed the `planwhy 0.1.0` wheel, and the installed console script ran from outside the checkout. Safe deterministic CLI smoke checks passed for `explain`, `drift`, `review`, and import preview. Real local `llama3.2:latest` smoke tests passed for a replacement explanation and a repeated standards-rule explanation. A repeated-standards-finding AI-selection defect was fixed with an explicit one-based `--occurrence N` selector; its payload remains the same allowlisted rule context and never includes a location, address, or finding free text. Phase 13 readiness now also includes `planwhy --version`, visible one-based occurrences in terminal/Markdown review output plus JSON `occurrence` fields, a public synthetic first-run example, and a versioned no-cloud benchmark that runs as part of the suite.
+
+**Brand migration status (2026-11-12):** the local Python distribution, package/module, CLI command, rule IDs, prompts, examples, tests, documentation, history location, and MIT attribution use **PlanWhy** / `planwhy` / `PLANWHY-*`. A clean install of the renamed package passed the same synthetic example and version smoke checks. Public GitHub/PyPI screening found no exact `planwhy` repository-name match or registered PyPI package at the time checked; that is a practical namespace screen, not trademark or domain clearance. The hosted GitHub repository still needs to be renamed by its owner before the remote URL and public release links can use `PlanWhy`.
 
 Confirmed by the project owner after the earlier plan: local Ollama is now working. The prior plan further reports successful real local `llama3.2` smoke tests. This means “Ollama unavailable” is no longer the current product status; it remains a failure case that the program must handle.
 
@@ -101,8 +103,8 @@ Confirmed by the project owner after the earlier plan: local Ollama is now worki
 Phase 12 is complete only so long as these behaviours remain true:
 
 - The user explicitly invokes AI explanation for supported deterministic findings.
-- The current CLI contract is `tfwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL`; repeated standards rule IDs additionally require `--occurrence N` to select one finding without broadening model context.
-- `--model` is explicit; TFWhy must not silently choose or download a model.
+- The current CLI contract is `planwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL`; repeated standards rule IDs additionally require `--occurrence N` to select one finding without broadening model context.
+- `--model` is explicit; PlanWhy must not silently choose or download a model.
 - The adapter calls only local Ollama and sends sanitized, allowlisted metadata—not raw plans, state, source trees, HCL, credentials, environment variables, addresses, filenames, locations, or raw finding text.
 - The response separates facts, interpretation, uncertainty, and conservative next steps, and is labelled as untrusted local-model interpretation.
 - Unknown or inconclusive findings cannot become certainty through model prose.
@@ -113,7 +115,7 @@ Expected verification on the actual checkout before any related change:
 ```bash
 python3 -m compileall -q src tests
 # Run the repository’s documented complete test command.
-tfwhy ai-explain --help
+planwhy ai-explain --help
 ```
 
 Then run the smallest relevant synthetic smoke test for each affected `replacement`, `standards`, or `drift` workflow. Never include a private plan, state file, or credentials in a test report.
@@ -124,7 +126,7 @@ Only the active phase introduces planned features. Later phases may be refined f
 
 ### Phase 13 — Public pilot and feedback (ACTIVE)
 
-**Goal:** establish whether real engineers can install, understand, and trust TFWhy before expanding its scope.
+**Goal:** establish whether real engineers can install, understand, and trust PlanWhy before expanding its scope.
 
 - [x] Inspect the actual repository and reconcile this plan, README, license, packaging metadata, CLI help, CI, and release checklist with reality.
 - [x] Run the full suite, relevant CLI smoke tests, and a clean-install package check; record actual outcomes and environment limitations.
@@ -141,7 +143,7 @@ Only the active phase introduces planned features. Later phases may be refined f
 
 ### Phase 14 — Guided troubleshooting and fix assistance (FUTURE; after pilot evidence)
 
-**Goal:** users can describe a supported Terraform problem, while TFWhy asks only decision-relevant questions and produces reviewable proposals.
+**Goal:** users can describe a supported Terraform problem, while PlanWhy asks only decision-relevant questions and produces reviewable proposals.
 
 - Define supported intents and evidence requirements before implementation.
 - Inspect only an explicit project directory; do not silently traverse arbitrary paths.
@@ -151,7 +153,7 @@ Only the active phase introduces planned features. Later phases may be refined f
 - Generate diffs/proposals only for supported cases; require explicit approval for a narrow file write.
 - Test multi-issue projects, ambiguity, malicious comments, synthetic secret markers, and insufficient-context cases.
 
-**Not yet an implemented command:** do not document an illustrative `tfwhy fix "..."` command as available until the code and tests exist.
+**Not yet an implemented command:** do not document an illustrative `planwhy fix "..."` command as available until the code and tests exist.
 
 ### Phase 15 — CI and pull-request workflows (FUTURE)
 
@@ -217,19 +219,19 @@ Agent responsibilities:
 ### Audience and tone
 
 - Write for an engineer arriving from GitHub, a YouTube link, search, or a shared issue—many will not know the project history.
-- Lead with the user problem and a plain-English explanation of TFWhy. Use clear, calm, technically precise language; be helpful rather than promotional.
+- Lead with the user problem and a plain-English explanation of PlanWhy. Use clear, calm, technically precise language; be helpful rather than promotional.
 - Prefer “can analyse supplied evidence” to broad claims such as “understands everything” or “fixes Terraform.” Explain uncertainty without hiding it.
 - State that AI is optional local assistance, not a source of truth. Never promise “no hallucinations”; instead describe the deterministic/evidence boundary.
 
 ### Required public structure
 
-1. **Title and one-sentence value proposition:** spell the name **TFWhy**, explain its Terraform + “Why” meaning, and say it is a local-first Python CLI.
+1. **Title and one-sentence value proposition:** spell the name **PlanWhy**, explain its Terraform + “Why” meaning, and say it is a local-first Python CLI.
 2. **What it helps with:** concise supported areas, qualified by the source-backed evidence available at release (plans, replacement analysis, standards/security checks, reviewable fix proposals/verification, bounded import/permission/drift/upgrade assistance, and optional local AI explanation).
 3. **What it does not do:** `terraform apply`/`destroy`, autonomous cloud operations, automatic file mutation, live cloud drift discovery, universal Terraform diagnosis, or perfect security/secret detection.
 4. **Trust, privacy, and drift semantics:** deterministic findings first; AI is opt-in/untrusted; no telemetry by default; sensitive artifact warning; no raw sensitive material in AI payloads; `replace_paths` and offline drift limitations.
-5. **Prerequisites and installation:** list only runtime/package-manager versions and commands confirmed in repository metadata or CI. Until PyPI publication is verified, document the reported local-checkout route `pipx install .` as a source install and do not present `pip install tfwhy` as available. State any platform support only if tested.
+5. **Prerequisites and installation:** list only runtime/package-manager versions and commands confirmed in repository metadata or CI. Until PyPI publication is verified, document the reported local-checkout route `pipx install .` as a source install and do not present `pip install planwhy` as available. State any platform support only if tested.
 6. **Quick start:** use only commands confirmed by the current `--help` output and tests. Pair each command with required input/artifact and expected output type. Never paste real plan/state/secrets.
-7. **Optional local Ollama:** make it a separate opt-in section. Link to the [official Ollama quickstart](https://docs.ollama.com/quickstart); explain that the user installs/runs Ollama and pulls a model themselves. Preserve the current explicit-model rule. After verification in the checkout, document the supported command, historically `tfwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL`, and an actual tested model (historically `llama3.2`). Explain local resource/latency variability and failure guidance. Never claim TFWhy installs models or uses cloud AI.
+7. **Optional local Ollama:** make it a separate opt-in section. Link to the [official Ollama quickstart](https://docs.ollama.com/quickstart); explain that the user installs/runs Ollama and pulls a model themselves. Preserve the current explicit-model rule. After verification in the checkout, document the supported command, historically `planwhy ai-explain --kind {replacement,standards,drift} --finding ID --model MODEL`, and an actual tested model (historically `llama3.2`). Explain local resource/latency variability and failure guidance. Never claim PlanWhy installs models or uses cloud AI.
 8. **Examples and output:** use small synthetic, redacted examples. Label model-generated output separately from deterministic findings and show uncertainty where relevant.
 9. **Limitations:** provider plugins may be required for Terraform validation; PyPI status; supported/unsupported cases; no live cloud drift detection; AI output can be wrong and must be reviewed.
 10. **Feedback and contributing:** invite GitHub Issues/Discussions for reproducible bugs, false positives/negatives, install failures, model compatibility, and docs gaps. Ask contributors to use synthetic/redacted reproductions; never request credentials, state, raw plans, private source, or secrets. Include contribution/test commands only after verifying them in the repo.
@@ -239,7 +241,7 @@ Agent responsibilities:
 
 - Treat `--help`, packaging metadata, tested examples, CI, and release artifacts as the authority. If they disagree with this plan, fix the implementation/docs discrepancy rather than guessing.
 - Do **not** invent subcommands, flags, config files, output formats, provider support, installation paths, package names, version support, benchmark scores, security guarantees, integrations, or roadmap features.
-- Do not describe illustrative future commands (`tfwhy fix`, chat, IDE, CI, hosted services) as present features.
+- Do not describe illustrative future commands (`planwhy fix`, chat, IDE, CI, hosted services) as present features.
 - Do not claim an AI explanation is deterministic, safe to apply, or capable of overriding evidence.
 - Use exact commands only after running them against the release candidate. Mark source-only/unverified commands clearly, or omit them.
 - Keep `Plan.md` implementation-specific; keep `README.md` shorter, outcome-focused, and free of internal phase mechanics.
@@ -250,10 +252,10 @@ Before publishing, run every code block that contains a command in a clean/synth
 
 ## 10. Pilot signals (not current achievements)
 
-- Ten people outside the creator’s immediate circle try TFWhy.
+- Ten people outside the creator’s immediate circle try PlanWhy.
 - Three return without prompting.
 - Users can install it and use it from their own Terraform project directory.
-- Feedback records false positives/negatives, unsupported cases, local-model compatibility, response quality, and whether TFWhy changed a real decision or reduced investigation time.
+- Feedback records false positives/negatives, unsupported cases, local-model compatibility, response quality, and whether PlanWhy changed a real decision or reduced investigation time.
 - No user code, plan, state, prompt, or diagnostic session is collected by default.
 
 These are learning signals, not revenue, traction, or product-market-fit claims.

@@ -10,8 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from tfwhy.analyzer import PlanError, load_plan  # noqa: E402
-from tfwhy.renderers import (  # noqa: E402
+from planwhy.analyzer import PlanError, load_plan  # noqa: E402
+from planwhy.renderers import (  # noqa: E402
     render_drift_json,
     render_drift_markdown,
     render_drift_terminal,
@@ -67,7 +67,7 @@ class DriftTests(unittest.TestCase):
         for output_format in ("terminal", "markdown", "json"):
             with self.subTest(output_format=output_format):
                 result = subprocess.run(
-                    [sys.executable, "-m", "tfwhy", "drift", str(plan), "--format", output_format],
+                    [sys.executable, "-m", "planwhy", "drift", str(plan), "--format", output_format],
                     cwd=ROOT,
                     env={"PYTHONPATH": str(ROOT / "src")},
                     capture_output=True,
@@ -81,7 +81,7 @@ class DriftTests(unittest.TestCase):
     def test_drift_command_returns_a_safe_error_for_bad_input(self):
         path = self.write_plan({"format_version": "1.0", "resource_drift": "SYNTHETIC_SECRET_MARKER"})
         result = subprocess.run(
-            [sys.executable, "-m", "tfwhy", "drift", str(path)],
+            [sys.executable, "-m", "planwhy", "drift", str(path)],
             cwd=ROOT,
             env={"PYTHONPATH": str(ROOT / "src")},
             capture_output=True,

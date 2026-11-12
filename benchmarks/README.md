@@ -1,4 +1,4 @@
-# TFWhy synthetic benchmark
+# PlanWhy synthetic benchmark
 
 This is a small, versioned release-regression benchmark. It exercises deterministic replacement and drift semantics plus the AI payload privacy contract with synthetic repository inputs only. It does not use Terraform state, credentials, cloud APIs, or a local model.
 

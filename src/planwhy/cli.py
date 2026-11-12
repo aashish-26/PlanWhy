@@ -1,4 +1,4 @@
-"""Define TFWhy's user-facing commands and their explicit safety gates.
+"""Define PlanWhy's user-facing commands and their explicit safety gates.
 
 The CLI coordinates deterministic analyzers, renderers, and narrowly approved
 file writes. Only ``ai-explain`` may call local Ollama; no command applies or
@@ -28,8 +28,8 @@ from .standards import review_configuration
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="tfwhy", description="Explain a Terraform plan without exposing values.")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}", help="show the installed TFWhy version and exit")
+    parser = argparse.ArgumentParser(prog="planwhy", description="Explain a Terraform plan without exposing values.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}", help="show the installed PlanWhy version and exit")
     subparsers = parser.add_subparsers(dest="command", required=True)
     explain = subparsers.add_parser("explain", help="explain a Terraform plan JSON file")
     explain.add_argument("plan", type=Path)
@@ -46,7 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     ai.add_argument("--occurrence", type=int, help="1-based occurrence for a repeated standards rule ID")
     ai.add_argument("--plan", type=Path, help="plan JSON required for replacement or drift findings")
     ai.add_argument("--dir", dest="config_dir", type=Path, default=Path.cwd(), help="configuration directory for standards/replacement analysis")
-    ai.add_argument("--model", required=True, help="already-installed local Ollama model; TFWhy never downloads it")
+    ai.add_argument("--model", required=True, help="already-installed local Ollama model; PlanWhy never downloads it")
     ai.add_argument("--timeout", type=float, default=30, help="local Ollama request timeout in seconds (1-120; default: 30)")
     ai.add_argument("--format", choices=("terminal", "markdown", "json"), default="terminal")
     review = subparsers.add_parser("review", help="review Terraform configuration standards and security")
@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.save_history:
                 save_history(summary, args.history_file)
         except (PlanError, HistoryError) as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_terminal, "markdown": render_markdown, "json": render_json}[args.format]
         print(renderer(summary), end="")
@@ -110,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
             # metadata. This command never refreshes state or contacts a cloud.
             summary = load_plan(args.plan)
         except PlanError as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_drift_terminal, "markdown": render_drift_markdown, "json": render_drift_json}[args.format]
         print(renderer(summary), end="")
@@ -122,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
             # All other CLI commands remain deterministic and model-free.
             explanation = explain_with_ollama(payload, args.model, args.timeout)
         except (AIError, PlanError) as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_ai_terminal, "markdown": render_ai_markdown, "json": render_ai_json}[args.format]
         print(renderer(payload, explanation), end="")
@@ -131,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             report = review_configuration(args.config_dir, args.required_tags, args.skip_rules)
         except PlanError as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_review_terminal, "markdown": render_review_markdown, "json": render_review_json}[args.format]
         print(renderer(report), end="")
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.apply:
                 apply_proposal(proposal, args.config_dir)
         except (PlanError, FixError) as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_fix_terminal, "markdown": render_fix_markdown, "json": render_fix_json}[args.format]
         print(renderer(proposal), end="")
@@ -164,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.apply:
                 apply_import_proposal(proposal)
         except ImportError as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_import_terminal, "markdown": render_import_markdown, "json": render_import_json}[args.format]
         print(renderer(proposal), end="")
@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             result = verify_plan(load_plan(args.plan), args.from_address, args.to_address, args.kind)
         except (PlanError, FixError) as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_verification_terminal, "markdown": render_verification_markdown, "json": render_verification_json}[args.format]
         print(renderer(result), end="")
@@ -190,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 document = list_history(args.history_file)
         except HistoryError as exc:
-            print(f"tfwhy: error: {exc}", file=sys.stderr)
+            print(f"planwhy: error: {exc}", file=sys.stderr)
             return 2
         renderer = {"terminal": render_history_terminal, "markdown": render_history_markdown, "json": render_history_json}[args.format]
         print(renderer(document), end="")
@@ -206,13 +206,13 @@ def _ai_payload(args: argparse.Namespace):
         if args.plan is None:
             raise AIError("--plan is required for replacement AI explanations")
         summary = analyze_replacements(load_plan(args.plan), args.config_dir)
-        finding = _ordinal_finding(summary.replacement_findings, args.finding, "TFWHY")
+        finding = _ordinal_finding(summary.replacement_findings, args.finding, "PLANWHY")
         return replacement_payload(finding, args.finding)
     if args.kind == "drift":
         if args.plan is None:
             raise AIError("--plan is required for drift AI explanations")
         summary = load_plan(args.plan)
-        finding = _ordinal_finding(summary.drift_findings, args.finding, "TFWHY-DRIFT")
+        finding = _ordinal_finding(summary.drift_findings, args.finding, "PLANWHY-DRIFT")
         return drift_payload(finding, args.finding)
     report = review_configuration(args.config_dir)
     matches = tuple(finding for finding in report.findings if finding.rule_id == args.finding)

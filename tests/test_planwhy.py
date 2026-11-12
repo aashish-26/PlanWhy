@@ -11,9 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from tfwhy.analyzer import PlanError, load_plan  # noqa: E402
-from tfwhy.replacement import analyze_replacements  # noqa: E402
-from tfwhy.renderers import render_json, render_markdown, render_terminal  # noqa: E402
+from planwhy.analyzer import PlanError, load_plan  # noqa: E402
+from planwhy.replacement import analyze_replacements  # noqa: E402
+from planwhy.renderers import render_json, render_markdown, render_terminal  # noqa: E402
 
 
 def plan(resources=None, **extra):
@@ -33,7 +33,7 @@ def resource(address, resource_type, actions, **change):
 class PlanExplainerTests(unittest.TestCase):
     def test_version_flag_reports_the_packaged_version(self):
         result = subprocess.run(
-            [sys.executable, "-m", "tfwhy", "--version"],
+            [sys.executable, "-m", "planwhy", "--version"],
             cwd=ROOT,
             env={"PYTHONPATH": str(ROOT / "src")},
             capture_output=True,
@@ -41,7 +41,7 @@ class PlanExplainerTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "tfwhy 0.1.0\n")
+        self.assertEqual(result.stdout, "planwhy 0.1.0\n")
 
     def write_plan(self, content):
         handle = tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False)
@@ -225,27 +225,27 @@ class PlanExplainerTests(unittest.TestCase):
     def test_cli_formats_and_errors(self):
         path = self.write_plan(plan([resource("aws_instance.app", "aws_instance", ["create"])]))
         for output_format in ("terminal", "markdown", "json"):
-            result = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(path), "--format", output_format], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+            result = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(path), "--format", output_format], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0)
             self.assertIn("aws_instance.app", result.stdout)
         bad = self.write_plan("not json")
-        result = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(bad)], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+        result = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(bad)], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 2)
         self.assertIn("malformed JSON", result.stderr)
 
     def test_cli_integration_exit_codes_and_errors(self):
         valid = self.write_plan(plan([resource("aws_instance.app", "aws_instance", ["create"])]))
-        valid_result = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(valid)], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+        valid_result = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(valid)], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
         self.assertEqual(valid_result.returncode, 0)
         self.assertIn("aws_instance.app", valid_result.stdout)
 
-        missing = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(ROOT / "does-not-exist-SYNTHETIC_SECRET_MARKER.json")], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+        missing = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(ROOT / "does-not-exist-SYNTHETIC_SECRET_MARKER.json")], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
         self.assertEqual(missing.returncode, 2)
         self.assertIn("plan file not found", missing.stderr)
         self.assertNotIn("SYNTHETIC_SECRET_MARKER", missing.stderr)
 
         unsupported = self.write_plan(plan(format_version="2.0"))
-        unsupported_result = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(unsupported)], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+        unsupported_result = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(unsupported)], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
         self.assertEqual(unsupported_result.returncode, 2)
         self.assertIn("unsupported plan format major version", unsupported_result.stderr)
 
@@ -254,7 +254,7 @@ class PlanExplainerTests(unittest.TestCase):
         path = self.write_plan(plan([resource("aws_instance.app", "aws_instance", ["update"], before={"password": secret}, after={"password": secret})]))
         for output_format in ("terminal", "markdown", "json"):
             with self.subTest(output_format=output_format):
-                result = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(path), "--format", output_format], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+                result = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(path), "--format", output_format], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
                 self.assertEqual(result.returncode, 0)
                 self.assertNotIn(secret, result.stdout)
                 self.assertNotIn(secret, result.stderr)
@@ -264,7 +264,7 @@ class PlanExplainerTests(unittest.TestCase):
         config_dir = ROOT / "tests" / "fixtures" / "replacement_config"
         for output_format in ("terminal", "markdown", "json"):
             with self.subTest(output_format=output_format):
-                result = subprocess.run([sys.executable, "-m", "tfwhy", "explain", str(plan_path), "--dir", str(config_dir), "--format", output_format], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
+                result = subprocess.run([sys.executable, "-m", "planwhy", "explain", str(plan_path), "--dir", str(config_dir), "--format", output_format], cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src")}, capture_output=True, text=True, check=False)
                 self.assertEqual(result.returncode, 0)
                 self.assertIn("aws_instance.user_data", result.stdout)
                 self.assertIn("Likely", result.stdout)

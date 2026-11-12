@@ -1,4 +1,4 @@
-"""Expose TFWhy package metadata without running CLI or analysis work.
+"""Expose PlanWhy package metadata without running CLI or analysis work.
 
 Keep the release version here aligned with ``pyproject.toml`` so the installed
 CLI can report a useful version in bug reports.

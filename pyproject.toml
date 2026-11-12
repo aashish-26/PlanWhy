@@ -1,11 +1,11 @@
-# Python build and distribution metadata for the installable TFWhy CLI.
-# Keep the package version aligned with src/tfwhy/__init__.py.
+# Python build and distribution metadata for the installable PlanWhy CLI.
+# Keep the package version aligned with src/planwhy/__init__.py.
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tfwhy"
+name = "planwhy"
 version = "0.1.0"
 description = "A local-first Terraform plan explainer"
 readme = "README.md"
@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 [project.scripts]
-tfwhy = "tfwhy.cli:main"
+planwhy = "planwhy.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
