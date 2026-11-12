@@ -1,4 +1,8 @@
-"""Keep the public synthetic benchmark executable as part of the test suite."""
+"""Keep the public synthetic benchmark executable as part of the test suite.
+
+This regression test ensures the documented release benchmark stays runnable
+without cloud access or private Terraform artifacts.
+"""
 
 from __future__ import annotations
 

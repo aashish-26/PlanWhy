@@ -1,4 +1,8 @@
-"""Opt-in local history for sanitized Terraform plan metadata."""
+"""Persist opt-in, sanitized Terraform plan summaries on the local machine.
+
+History stores only allowlisted structural metadata so users can observe
+recurrence without retaining raw plans, state, values, or credentials.
+"""
 
 from __future__ import annotations
 

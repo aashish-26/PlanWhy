@@ -1,4 +1,9 @@
-"""Command-line interface for tfwhy."""
+"""Define TFWhy's user-facing commands and their explicit safety gates.
+
+The CLI coordinates deterministic analyzers, renderers, and narrowly approved
+file writes. Only ``ai-explain`` may call local Ollama; no command applies or
+destroys Terraform infrastructure.
+"""
 
 from __future__ import annotations
 

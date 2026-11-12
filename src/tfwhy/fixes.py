@@ -1,4 +1,8 @@
-"""Deterministic Terraform refactoring proposals and plan verification."""
+"""Build conservative Terraform refactoring proposals and verify later plans.
+
+This module creates reviewable diffs for a small supported scope. It never
+executes Terraform, changes state, or overwrites an existing configuration file.
+"""
 
 from __future__ import annotations
 

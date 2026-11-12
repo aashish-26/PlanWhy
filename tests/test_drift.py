@@ -1,3 +1,5 @@
+"""Test offline interpretation of Terraform's explicit resource_drift metadata."""
+
 import json
 import subprocess
 import sys

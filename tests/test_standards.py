@@ -1,3 +1,5 @@
+"""Test static standards/security findings and safe review rendering."""
+
 import json
 import shutil
 import subprocess

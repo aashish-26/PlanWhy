@@ -1,1 +1,2 @@
+# Require a guided template so public feedback does not accidentally include sensitive data.
 blank_issues_enabled: false

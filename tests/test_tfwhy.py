@@ -1,3 +1,5 @@
+"""Test plan normalization, replacement evidence, CLI formats, and privacy limits."""
+
 import json
 import shutil
 import subprocess

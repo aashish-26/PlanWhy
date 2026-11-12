@@ -1,4 +1,8 @@
-"""Deterministic Terraform configuration standards and security checks."""
+"""Run bounded, deterministic Terraform standards and security checks.
+
+The scanner reports only static, evidence-backed findings from an explicit
+directory. It is not a complete Terraform evaluator or cloud security audit.
+"""
 
 from __future__ import annotations
 

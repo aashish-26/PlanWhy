@@ -1,4 +1,8 @@
-"""Run TFWhy's versioned, synthetic Phase 13 benchmark without cloud access."""
+"""Run TFWhy's versioned, synthetic Phase 13 benchmark without cloud access.
+
+It is a small public regression harness for deterministic semantics and the AI
+prompt allowlist; it does not evaluate model-answer quality or real projects.
+"""
 
 from __future__ import annotations
 

@@ -1,3 +1,5 @@
+"""Test the opt-in local Ollama boundary, allowlist, and unsafe-response guards."""
+
 import contextlib
 import io
 import json

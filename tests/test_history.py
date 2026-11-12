@@ -1,3 +1,5 @@
+"""Test opt-in sanitized plan-history persistence and corruption safeguards."""
+
 import json
 import shutil
 import subprocess

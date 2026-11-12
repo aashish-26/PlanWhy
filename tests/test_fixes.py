@@ -1,3 +1,5 @@
+"""Test preview-first refactoring proposals, write approvals, and verification limits."""
+
 import json
 import shutil
 import subprocess

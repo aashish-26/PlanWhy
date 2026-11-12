@@ -1,3 +1,4 @@
+# GitHub Actions verification for supported Python versions before merge/release.
 name: Tests
 
 on:

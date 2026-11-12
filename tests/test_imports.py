@@ -1,3 +1,5 @@
+"""Test narrow import proposals, escaping, and explicit new-file write approval."""
+
 import shutil
 import subprocess
 import sys

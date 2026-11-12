@@ -1,3 +1,4 @@
+# GitHub's structured, privacy-preserving template for reproducible defects.
 name: Bug report
 description: Report an installation problem, incorrect finding, model issue, or documentation defect.
 title: "[Bug]: "

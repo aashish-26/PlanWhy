@@ -1,4 +1,8 @@
-"""Load Terraform plan JSON and reduce it to safe, reportable metadata."""
+"""Load Terraform plan JSON and reduce it to safe, reportable metadata.
+
+This is the deterministic boundary for plan input: it validates the supported
+format and deliberately excludes raw before/after values from normalized data.
+"""
 
 from __future__ import annotations
 

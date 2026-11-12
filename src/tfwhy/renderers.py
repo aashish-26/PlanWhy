@@ -1,4 +1,8 @@
-"""Safe output formats for normalized Terraform plan metadata."""
+"""Render normalized TFWhy findings for terminal, Markdown, and JSON output.
+
+Renderers consume only safe normalized models; they must not re-read raw plan
+data or expose Terraform values, secrets, or untrusted model data as facts.
+"""
 
 from __future__ import annotations
 
